@@ -209,6 +209,11 @@ export function setupLights(scene) {
   key.shadow.bias = -0.0004
   scene.add(key)
 
-  scene.add(Object.assign(new THREE.DirectionalLight(0xd0e4ff, 0.45), { position: new THREE.Vector3(-5, 3, 2) }))
-  scene.add(Object.assign(new THREE.DirectionalLight(0xffe8d0, 0.35), { position: new THREE.Vector3(0, -4, -5) }))
+  const fill = new THREE.DirectionalLight(0xd0e4ff, 0.45)
+  fill.position.set(-5, 3, 2)
+  scene.add(fill)
+
+  const rim = new THREE.DirectionalLight(0xffe8d0, 0.35)
+  rim.position.set(0, -4, -5)
+  scene.add(rim)
 }
