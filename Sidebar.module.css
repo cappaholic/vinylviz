@@ -1,0 +1,86 @@
+.zone {
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.zone:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.zone.loaded {
+  border-color: rgba(200, 169, 110, 0.35);
+  border-style: solid;
+  background: rgba(200, 169, 110, 0.06);
+}
+
+.zone.loaded:hover {
+  background: rgba(200, 169, 110, 0.1);
+}
+
+.empty_inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.loaded_inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.icon {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--text2);
+}
+
+.thumb {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.upload_label {
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.upload_sub {
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.loaded_label {
+  display: block;
+  font-size: 12px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.loaded_status {
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.loaded_info {
+  min-width: 0;
+}

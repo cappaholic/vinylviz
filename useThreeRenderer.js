@@ -1,0 +1,355 @@
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.logo_dot {
+  color: var(--text3);
+  font-style: italic;
+}
+
+.tagline {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.section {
+  margin-bottom: 22px;
+}
+
+.section_label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--text3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section_label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.optional {
+  color: var(--text3);
+}
+
+.hint_text {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ── Sleeve style toggle ── */
+.toggle_row {
+  display: flex;
+  gap: 6px;
+}
+
+.toggle_btn {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 8px 6px;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
+}
+
+.toggle_btn:hover {
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.toggle_active {
+  background: rgba(200, 169, 110, 0.12);
+  border-color: rgba(200, 169, 110, 0.5);
+  color: var(--accent);
+}
+
+/* ── Vinyl colour chips ── */
+.vinyl_presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.vinyl_chip {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.15s, border-color 0.15s;
+  background: var(--surface3);
+  overflow: visible;
+}
+
+.vinyl_chip:hover {
+  transform: scale(1.08);
+}
+
+.chip_active {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(200, 169, 110, 0.25);
+}
+
+.chip_label {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: var(--text3);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.chip_clear {
+  font-size: 16px;
+  color: var(--text2);
+  line-height: 1;
+}
+
+.chip_custom {
+  font-size: 18px;
+  color: var(--text2);
+  line-height: 1;
+}
+
+/* Checkerboard pattern for clear chip */
+.vinyl_chip:has(.chip_clear) {
+  background:
+    repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%)
+    0 0 / 10px 10px;
+}
+
+.custom_color_row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.color_picker {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 2px;
+  background: var(--surface2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── Form fields ── */
+.field {
+  margin-bottom: 10px;
+}
+
+.field_label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+  margin-bottom: 5px;
+}
+
+.input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+/* ── Tracks ── */
+.tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.track_row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track_num {
+  font-size: 10px;
+  color: var(--text3);
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.track_input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 8px;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 0;
+}
+
+.track_input:focus {
+  border-color: var(--accent);
+}
+
+.remove_btn {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.remove_btn:hover { color: var(--danger); }
+
+.add_track_btn {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 7px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  margin-top: 2px;
+}
+
+.add_track_btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Coming soon ── */
+.coming_soon {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-dark);
+  background: rgba(139, 94, 60, 0.15);
+  border: 1px solid rgba(139, 94, 60, 0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.formats {
+  display: flex;
+  gap: 8px;
+}
+
+.format_item {
+  flex: 1;
+  padding: 10px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  opacity: 0.35;
+}
+
+.format_icon { font-size: 18px; margin-bottom: 4px; }
+
+.format_label {
+  font-size: 10px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Footer render button ── */
+.footer {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.render_btn {
+  width: 100%;
+  background: var(--accent);
+  color: #0a0a0a;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.render_btn:hover { opacity: 0.88; }
+.render_btn:active { transform: scale(0.99); }
+.render_btn:disabled { opacity: 0.5; cursor: not-allowed; }
