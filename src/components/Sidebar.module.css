@@ -9,12 +9,7 @@
   overflow: hidden;
 }
 
-.header {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
+.header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .logo { font-family: var(--font-serif); font-size: 24px; color: var(--accent); letter-spacing: -0.5px; line-height: 1; }
 .logo_dot { color: var(--text3); font-style: italic; }
 .tagline { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
@@ -32,27 +27,79 @@
 .optional { color: var(--text3); }
 .hint_text { font-size: 10px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
 
-/* Sleeve toggle */
-.toggle_row { display: flex; gap: 6px; }
-.toggle_btn {
-  flex: 1; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius); color: var(--text2); font-family: var(--font-mono);
-  font-size: 11px; padding: 8px 6px; cursor: pointer; transition: all 0.18s; text-align: center;
+/* ── Inner sleeve section ── */
+.inner_sleeve_header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  margin-top: 4px;
 }
-.toggle_btn:hover { border-color: var(--border2); color: var(--text); }
-.toggle_active { background: rgba(200,169,110,0.12); border-color: rgba(200,169,110,0.5); color: var(--accent); }
 
-/* Vinyl chips */
+.inner_sleeve_label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text2);
+}
+
+.badge_gatefold {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--success);
+  background: rgba(76, 175, 125, 0.12);
+  border: 1px solid rgba(76, 175, 125, 0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.badge_optional {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.inner_sleeve_row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.inner_sleeve_half {
+  flex: 1;
+  min-width: 0;
+}
+
+.inner_side_label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  margin-bottom: 4px;
+}
+
+/* Make UploadZone smaller inside the half-width slots */
+.inner_sleeve_half :global(.upload-zone),
+.inner_sleeve_half > div {
+  margin-bottom: 0;
+}
+
+/* ── Vinyl chips ── */
 .vinyl_presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; }
 
 .vinyl_chip {
   width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border2);
   cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  position: relative; transition: transform 0.15s, border-color 0.15s; background: var(--surface3); overflow: visible;
+  position: relative; transition: transform 0.15s, border-color 0.15s; background: var(--surface3);
 }
 .vinyl_chip:hover { transform: scale(1.1); }
 .chip_active { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(200,169,110,0.25); }
-
 .chip_label {
   position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
   font-size: 9px; color: var(--text3); white-space: nowrap; pointer-events: none;
@@ -65,7 +112,7 @@
   padding: 2px; background: var(--surface2); cursor: pointer; flex-shrink: 0;
 }
 
-/* Fields */
+/* ── Fields ── */
 .field { margin-bottom: 10px; }
 .field_label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 5px; }
 .input {
@@ -74,7 +121,7 @@
 }
 .input:focus { border-color: var(--accent); }
 
-/* Tracks */
+/* ── Tracks ── */
 .tracks { display: flex; flex-direction: column; gap: 5px; margin-bottom: 6px; }
 .track_row { display: flex; align-items: center; gap: 8px; }
 .track_num { font-size: 10px; color: var(--text3); width: 20px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
@@ -91,14 +138,14 @@
 }
 .add_track_btn:hover { border-color: var(--accent); color: var(--accent); }
 
-/* Coming soon */
+/* ── Coming soon ── */
 .coming_soon { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-dark); background: rgba(139,94,60,0.15); border: 1px solid rgba(139,94,60,0.3); padding: 2px 6px; border-radius: 3px; }
 .formats { display: flex; gap: 8px; }
 .format_item { flex: 1; padding: 10px 6px; border: 1px solid var(--border); border-radius: var(--radius); text-align: center; opacity: 0.35; }
 .format_icon { font-size: 18px; margin-bottom: 4px; }
 .format_label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
 
-/* Footer */
+/* ── Footer ── */
 .footer { padding: 12px 16px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
 .render_btn {
   width: 100%; background: var(--accent); color: #0a0a0a; border: none; border-radius: var(--radius);

@@ -30,16 +30,15 @@ function Field({ label, children }) {
 }
 
 export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaChange, onTracksChange, onRender, isRendering }) {
-  const isBook     = meta.sleeveStyle === 'book'
-  const vinylColor = meta.vinylColor || '#080808'
+  const vinylColor   = meta.vinylColor || '#080808'
+  const hasInnerArt  = !!(images.innerLeft || images.innerRight)
+  const isCustomColor = !VINYL_PRESETS.slice(0, -1).find(p => p.value === vinylColor)
 
   const addTrack    = () => { if (tracks.length < 20) onTracksChange([...tracks, '']) }
   const updateTrack = (i, val) => { const n = [...tracks]; n[i] = val; onTracksChange(n) }
   const removeTrack = (i) => { if (tracks.length > 1) onTracksChange(tracks.filter((_, j) => j !== i)) }
 
   const handlePreset = (val) => { if (val !== 'custom') onMetaChange('vinylColor', val) }
-
-  const isCustomColor = !VINYL_PRESETS.slice(0, -1).find(p => p.value === vinylColor)
 
   return (
     <aside className={styles.sidebar}>
@@ -50,31 +49,42 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
 
       <div className={styles.scroll}>
 
-        {/* Sleeve Style */}
-        <section className={styles.section}>
-          <SectionLabel>Sleeve Style</SectionLabel>
-          <div className={styles.toggle_row}>
-            <button className={`${styles.toggle_btn} ${!isBook ? styles.toggle_active : ''}`} onClick={() => onMetaChange('sleeveStyle', 'standard')}>Standard</button>
-            <button className={`${styles.toggle_btn} ${isBook  ? styles.toggle_active : ''}`} onClick={() => onMetaChange('sleeveStyle', 'book')}>Book / Gatefold</button>
-          </div>
-          {isBook && <p className={styles.hint_text}>Opens like a book — left &amp; right inner panels visible.</p>}
-        </section>
-
-        {/* Artwork */}
+        {/* ── Artwork ── */}
         <section className={styles.section}>
           <SectionLabel>Artwork</SectionLabel>
-          <UploadZone id="front" label="Front Cover" sublabel="Main album artwork" icon="↑" dataUrl={images.front} onUpload={url => onImageUpload('front', url)} />
-          <UploadZone id="back"  label="Back Cover"  sublabel="Auto-generated if skipped" icon="↑" dataUrl={images.back}  onUpload={url => onImageUpload('back', url)} />
-          {isBook ? (<>
-            <UploadZone id="innerLeft"  label="Inner Left Sleeve"  sublabel="Left panel (book open)"  icon="↑" dataUrl={images.innerLeft}  onUpload={url => onImageUpload('innerLeft', url)} />
-            <UploadZone id="innerRight" label="Inner Right Sleeve" sublabel="Right panel (book open)" icon="↑" dataUrl={images.innerRight} onUpload={url => onImageUpload('innerRight', url)} />
-          </>) : (
-            <UploadZone id="inner" label="Inner Sleeve" sublabel="Optional inner artwork" icon="↑" dataUrl={images.inner} onUpload={url => onImageUpload('inner', url)} />
-          )}
-          <UploadZone id="label" label="Record Label Sticker" sublabel="Centre sticker — auto-generated if skipped" icon="◎" dataUrl={images.label} onUpload={url => onImageUpload('label', url)} />
+
+          <UploadZone id="front" label="Front Cover" sublabel="Main album artwork" icon="↑"
+            dataUrl={images.front} onUpload={url => onImageUpload('front', url)} />
+
+          <UploadZone id="back" label="Back Cover" sublabel="Auto-generated if skipped" icon="↑"
+            dataUrl={images.back} onUpload={url => onImageUpload('back', url)} />
+
+          {/* Inner sleeves — always shown, auto-opens gatefold when present */}
+          <div className={styles.inner_sleeve_header}>
+            <span className={styles.inner_sleeve_label}>Inner Sleeves</span>
+            {hasInnerArt
+              ? <span className={styles.badge_gatefold}>Gatefold open ✓</span>
+              : <span className={styles.badge_optional}>optional — adds gatefold</span>}
+          </div>
+
+          <div className={styles.inner_sleeve_row}>
+            <div className={styles.inner_sleeve_half}>
+              <div className={styles.inner_side_label}>Left panel</div>
+              <UploadZone id="innerLeft" label="Inner Left" sublabel="Upload to open gatefold" icon="↑"
+                dataUrl={images.innerLeft} onUpload={url => onImageUpload('innerLeft', url)} />
+            </div>
+            <div className={styles.inner_sleeve_half}>
+              <div className={styles.inner_side_label}>Right panel</div>
+              <UploadZone id="innerRight" label="Inner Right" sublabel="Upload to open gatefold" icon="↑"
+                dataUrl={images.innerRight} onUpload={url => onImageUpload('innerRight', url)} />
+            </div>
+          </div>
+
+          <UploadZone id="label" label="Record Label Sticker" sublabel="Centre sticker — auto-generated if skipped" icon="◎"
+            dataUrl={images.label} onUpload={url => onImageUpload('label', url)} />
         </section>
 
-        {/* Vinyl Colour */}
+        {/* ── Vinyl Colour ── */}
         <section className={styles.section}>
           <SectionLabel>Vinyl Colour</SectionLabel>
           <div className={styles.vinyl_presets}>
@@ -84,8 +94,7 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
                 <button key={value} title={label}
                   className={`${styles.vinyl_chip} ${active ? styles.chip_active : ''}`}
                   onClick={() => handlePreset(value)}
-                  style={value !== 'clear' && value !== 'custom' ? { background: value } : {}}
-                >
+                  style={value !== 'clear' && value !== 'custom' ? { background: value } : {}}>
                   {value === 'clear'  && <span className={styles.chip_icon}>✦</span>}
                   {value === 'custom' && <span className={styles.chip_icon}>+</span>}
                   <span className={styles.chip_label}>{label}</span>
@@ -99,36 +108,51 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
               onChange={e => onMetaChange('vinylColor', e.target.value)} />
             <input type="text" className={styles.input} placeholder="#080808"
               value={vinylColor === 'clear' ? 'clear' : vinylColor}
-              onChange={e => { const v = e.target.value.trim(); if (v === 'clear' || v.match(/^#[0-9a-fA-F]{0,6}$/)) onMetaChange('vinylColor', v) }}
+              onChange={e => {
+                const v = e.target.value.trim()
+                if (v === 'clear' || v.match(/^#[0-9a-fA-F]{0,6}$/)) onMetaChange('vinylColor', v)
+              }}
               style={{ flex: 1 }} />
           </div>
           <p className={styles.hint_text}>Clear vinyl renders with partial transparency.</p>
         </section>
 
-        {/* Album Info */}
+        {/* ── Album Info ── */}
         <section className={styles.section}>
           <SectionLabel>Album Info</SectionLabel>
-          <Field label="Artist / Band Name"><input className={styles.input} type="text" placeholder="Your name or band name" value={meta.artist} onChange={e => onMetaChange('artist', e.target.value)} /></Field>
-          <Field label="Album Title"><input className={styles.input} type="text" placeholder="Album title" value={meta.albumTitle} onChange={e => onMetaChange('albumTitle', e.target.value)} /></Field>
-          <Field label="Year"><input className={styles.input} type="text" placeholder="2025" maxLength={4} style={{ width: 72 }} value={meta.year} onChange={e => onMetaChange('year', e.target.value)} /></Field>
+          <Field label="Artist / Band Name">
+            <input className={styles.input} type="text" placeholder="Your name or band name"
+              value={meta.artist} onChange={e => onMetaChange('artist', e.target.value)} />
+          </Field>
+          <Field label="Album Title">
+            <input className={styles.input} type="text" placeholder="Album title"
+              value={meta.albumTitle} onChange={e => onMetaChange('albumTitle', e.target.value)} />
+          </Field>
+          <Field label="Year">
+            <input className={styles.input} type="text" placeholder="2025" maxLength={4}
+              style={{ width: 72 }} value={meta.year} onChange={e => onMetaChange('year', e.target.value)} />
+          </Field>
         </section>
 
-        {/* Track Listing */}
+        {/* ── Track Listing ── */}
         <section className={styles.section}>
           <SectionLabel>Track Listing <span className={styles.optional}>(optional)</span></SectionLabel>
           <div className={styles.tracks}>
             {tracks.map((title, i) => (
               <div key={i} className={styles.track_row}>
                 <span className={styles.track_num}>{String(i + 1).padStart(2, '0')}</span>
-                <input className={styles.track_input} type="text" placeholder="Track title" value={title} onChange={e => updateTrack(i, e.target.value)} />
+                <input className={styles.track_input} type="text" placeholder="Track title"
+                  value={title} onChange={e => updateTrack(i, e.target.value)} />
                 <button className={styles.remove_btn} onClick={() => removeTrack(i)} title="Remove">×</button>
               </div>
             ))}
           </div>
-          {tracks.length < 20 && <button className={styles.add_track_btn} onClick={addTrack}>+ Add Track</button>}
+          {tracks.length < 20 && (
+            <button className={styles.add_track_btn} onClick={addTrack}>+ Add Track</button>
+          )}
         </section>
 
-        {/* Coming Soon */}
+        {/* ── Coming Soon ── */}
         <section className={styles.section}>
           <SectionLabel>Format <span className={styles.coming_soon}>Coming Soon</span></SectionLabel>
           <div className={styles.formats}>
