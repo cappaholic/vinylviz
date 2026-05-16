@@ -6,24 +6,22 @@ import { buildAlbumScene } from './utils/scene.js'
 import styles from './App.module.css'
 
 const DEFAULT_META = {
-  artist:      '',
-  albumTitle:  '',
-  year:        '',
-  sleeveStyle: 'standard',
-  vinylColor:  '#080808',
+  artist: '', albumTitle: '', year: '',
+  sleeveStyle: 'standard', vinylColor: '#080808',
 }
 const DEFAULT_TRACKS = ['', '']
 
 export default function App() {
   const canvasRef = useRef(null)
 
-  const [images,      setImages]      = useState({})
-  const [meta,        setMeta]        = useState(DEFAULT_META)
-  const [tracks,      setTracks]      = useState(DEFAULT_TRACKS)
-  const [isRendering, setRendering]   = useState(false)
-  const [isRendered,  setRendered]    = useState(false)
-  const [activeView,  setActiveView]  = useState('perspective')
-  const [isSpinning,  setSpinning]    = useState(false)
+  const [images,       setImages]      = useState({})
+  const [meta,         setMeta]        = useState(DEFAULT_META)
+  const [tracks,       setTracks]      = useState(DEFAULT_TRACKS)
+  const [isRendering,  setRendering]   = useState(false)
+  const [isRendered,   setRendered]    = useState(false)
+  const [activeView,   setActiveView]  = useState('perspective')
+  const [isSpinning,   setSpinning]    = useState(false)
+  const [sidebarOpen,  setSidebarOpen] = useState(true)
 
   const { sceneRef, setView, toggleSpin, setAlbumRefs } = useThreeRenderer(canvasRef)
 
@@ -44,20 +42,14 @@ export default function App() {
       setAlbumRefs(refs)
       setRendered(true)
       setActiveView('perspective')
-      // Auto-start slow spin on the record
-      setSpinning(true)
+      // Collapse sidebar and start spin after render
+      setSidebarOpen(false)
     } catch (err) {
       console.error('Scene build error:', err)
     } finally {
       setRendering(false)
     }
   }, [sceneRef, images, meta, tracks, setAlbumRefs])
-
-  // Sync spinning state into the renderer hook whenever it changes
-  useEffect(() => {
-    // The renderer's toggleSpin returns the new state; we call it only if
-    // the internal state is out of sync — instead we expose setSpin directly
-  }, [isSpinning])
 
   const handleSetView = useCallback((id) => {
     setActiveView(id)
@@ -70,31 +62,40 @@ export default function App() {
     if (nowSpinning) setActiveView('record')
   }, [toggleSpin])
 
-  // Kick off auto-spin after first render
+  // Auto-spin after first render
   const firstRender = useRef(true)
   useEffect(() => {
     if (isRendered && firstRender.current) {
       firstRender.current = false
-      // Small delay so the scene settles before spin starts
       setTimeout(() => {
         const spinning = toggleSpin()
         setSpinning(spinning)
-      }, 400)
+      }, 500)
     }
   }, [isRendered]) // eslint-disable-line
 
   return (
     <div className={styles.layout}>
-      <Sidebar
-        images={images}
-        meta={meta}
-        tracks={tracks}
-        onImageUpload={handleImageUpload}
-        onMetaChange={handleMetaChange}
-        onTracksChange={setTracks}
-        onRender={handleRender}
-        isRendering={isRendering}
-      />
+      <div className={`${styles.sidebar_wrap} ${sidebarOpen ? styles.open : styles.closed}`}>
+        <Sidebar
+          images={images} meta={meta} tracks={tracks}
+          onImageUpload={handleImageUpload}
+          onMetaChange={handleMetaChange}
+          onTracksChange={setTracks}
+          onRender={handleRender}
+          isRendering={isRendering}
+        />
+        {/* Toggle tab on right edge of sidebar */}
+        <button
+          className={styles.sidebar_tab}
+          onClick={() => setSidebarOpen(o => !o)}
+          title={sidebarOpen ? 'Hide panel' : 'Show panel'}
+          aria-label={sidebarOpen ? 'Hide panel' : 'Show panel'}
+        >
+          {sidebarOpen ? '‹' : '›'}
+        </button>
+      </div>
+
       <Viewport
         canvasRef={canvasRef}
         isRendered={isRendered}

@@ -14,45 +14,39 @@ export default function Viewport({ canvasRef, isRendered, activeView, onSetView,
     <div className={styles.viewport}>
       <canvas ref={canvasRef} className={styles.canvas} />
 
-      {/* Empty state */}
       {!isRendered && (
         <div className={styles.empty}>
           <div className={styles.empty_disc}>⬤</div>
           <div className={styles.empty_title}>Your album lives here</div>
-          <div className={styles.empty_sub}>Upload artwork &amp; click Render Album</div>
+          <div className={styles.empty_sub}>Fill in the panel &amp; click Render Album</div>
         </div>
       )}
 
-      {/* Controls hint */}
       {isRendered && (
         <div className={styles.controls_hint}>
-          <span><strong>Drag</strong> to rotate</span>
-          <span className={styles.divider}>·</span>
-          <span><strong>Right drag</strong> to pan</span>
-          <span className={styles.divider}>·</span>
-          <span><strong>Scroll</strong> to zoom</span>
-          <span className={styles.divider}>·</span>
-          <span><strong>Dbl-click</strong> to reset</span>
+          <span><strong>Drag</strong> rotate</span>
+          <span className={styles.sep}>·</span>
+          <span><strong>Right drag</strong> pan</span>
+          <span className={styles.sep}>·</span>
+          <span><strong>Scroll</strong> zoom</span>
+          <span className={styles.sep}>·</span>
+          <span><strong>Dbl-click</strong> reset</span>
         </div>
       )}
 
-      {/* View controls */}
       {isRendered && (
         <div className={styles.view_controls}>
           {VIEW_BUTTONS.map(({ id, label }) => (
-            <button
-              key={id}
+            <button key={id}
               className={`${styles.view_btn} ${activeView === id ? styles.active : ''}`}
-              onClick={() => onSetView(id)}
-            >
+              onClick={() => onSetView(id)}>
               {label}
             </button>
           ))}
           <div className={styles.divider_line} />
           <button
             className={`${styles.view_btn} ${isSpinning ? styles.active : ''}`}
-            onClick={onToggleSpin}
-          >
+            onClick={onToggleSpin}>
             {isSpinning ? '◼ Stop Spin' : '▶ Spin Record'}
           </button>
         </div>

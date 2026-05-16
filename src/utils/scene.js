@@ -1,14 +1,7 @@
 import * as THREE from 'three'
 import { dataUrlToTexture, solidTexture, generateBackCoverTexture, generateVinylTextureAsync } from './textures.js'
 
-/**
- * Builds the full album scene.
- * meta: { artist, albumTitle, year, tracks, sleeveStyle, vinylColor }
- * sleeveStyle: 'standard' | 'book'
- * vinylColor: hex string e.g. '#1a0a2e' or 'clear'
- */
 export async function buildAlbumScene(scene, images, meta) {
-  // Remove previous album group cleanly
   const existing = scene.getObjectByName('albumGroup')
   if (existing) {
     existing.traverse(obj => {
@@ -25,187 +18,177 @@ export async function buildAlbumScene(scene, images, meta) {
   group.name = 'albumGroup'
   scene.add(group)
 
-  const isBook   = meta.sleeveStyle === 'book'
+  const isBook    = meta.sleeveStyle === 'book'
   const vinylColor = meta.vinylColor || '#080808'
-  const isClear  = vinylColor === 'clear'
+  const isClear   = vinylColor === 'clear'
 
   // ─── Textures ─────────────────────────────────────────────────────────────
-  const frontTex = images.front
-    ? dataUrlToTexture(images.front)
-    : solidTexture('#1c1c1c')
+  // flipY must be TRUE for BoxGeometry +Z face (front) to show correctly
+  const makeTex = (dataUrl, fallback) => {
+    if (!dataUrl) return solidTexture(fallback || '#1c1c1c')
+    const tex = new THREE.TextureLoader().load(dataUrl)
+    tex.colorSpace = THREE.SRGBColorSpace
+    // flipY = true is the Three.js default and correct for BoxGeometry faces
+    tex.flipY = true
+    return tex
+  }
 
-  const backTex = images.back
-    ? dataUrlToTexture(images.back)
-    : generateBackCoverTexture({
-        artist: meta.artist,
-        albumTitle: meta.albumTitle,
-        year: meta.year,
-        tracks: meta.tracks,
-      })
-
-  const innerLeftTex  = images.innerLeft  ? dataUrlToTexture(images.innerLeft)  : solidTexture('#181818')
-  const innerRightTex = images.innerRight ? dataUrlToTexture(images.innerRight) : solidTexture('#1a1a1a')
-  const innerTex      = images.inner      ? dataUrlToTexture(images.inner)      : solidTexture('#181818')
+  const frontTex      = makeTex(images.front,      '#1c1c1c')
+  const backTex       = images.back
+    ? makeTex(images.back, '#111')
+    : generateBackCoverTexture({ artist: meta.artist, albumTitle: meta.albumTitle, year: meta.year, tracks: meta.tracks })
+  const innerLeftTex  = makeTex(images.innerLeft,  '#181818')
+  const innerRightTex = makeTex(images.innerRight, '#1a1a1a')
+  const innerTex      = makeTex(images.inner,      '#181818')
 
   const vinylTex = await generateVinylTextureAsync({
-    artist:       meta.artist,
-    albumTitle:   meta.albumTitle,
-    labelDataUrl: images.label || null,
-    vinylColor,
-    isClear,
+    artist: meta.artist, albumTitle: meta.albumTitle,
+    labelDataUrl: images.label || null, vinylColor, isClear,
   })
 
-  // ─── Sleeve geometry ──────────────────────────────────────────────────────
-  const SZ = 3.1   // sleeve width & height (square)
-  const ST = 0.072 // sleeve thickness
+  // ─── Dimensions ───────────────────────────────────────────────────────────
+  const SZ = 3.1    // sleeve size (square)
+  const ST = 0.072  // sleeve thickness
 
-  // Helper — fresh edge material each call to avoid shared-material issues
-  const edgeMat = () => new THREE.MeshStandardMaterial({
-    color: 0x1a1714,
-    roughness: 0.92,
-    metalness: 0.0,
-  })
+  const edgeMat = () => new THREE.MeshStandardMaterial({ color: 0x1a1714, roughness: 0.92 })
+  const surfMat = (tex) => new THREE.MeshStandardMaterial({ map: tex, roughness: 0.72, metalness: 0.02 })
 
-  const frontMat = new THREE.MeshStandardMaterial({ map: frontTex, roughness: 0.72, metalness: 0.02 })
-  const backMat  = new THREE.MeshStandardMaterial({ map: backTex,  roughness: 0.72, metalness: 0.02 })
-
+  // ─── Sleeve ───────────────────────────────────────────────────────────────
   if (isBook) {
-    // ── Gatefold / book style: two hinged panels ──
-    const halfW   = SZ / 2
+    // Gatefold: spread open like an open book lying flat-ish
+    // Left panel angled back, right panel angled forward — open V shape
+    const halfW    = SZ / 2
     const panelGeo = new THREE.BoxGeometry(halfW, SZ, ST)
+    const openAngle = 0.45 // radians — how wide open the book is
 
-    // Left panel: outside = back cover, inside = inner-left
-    const lInMat  = new THREE.MeshStandardMaterial({ map: innerLeftTex, roughness: 0.82 })
-    const lOutMat = new THREE.MeshStandardMaterial({ map: backTex,      roughness: 0.72, metalness: 0.02 })
-    // BoxGeometry face order: +X, -X, +Y, -Y, +Z(front/inside), -Z(back/outside)
-    const leftPanel = new THREE.Mesh(panelGeo, [edgeMat(), edgeMat(), edgeMat(), edgeMat(), lInMat, lOutMat])
+    // Left panel — back cover outside, inner-left inside
+    // BoxGeometry faces: +X right, -X left, +Y top, -Y bottom, +Z front, -Z back
+    const leftPanel = new THREE.Mesh(panelGeo, [
+      edgeMat(), edgeMat(), edgeMat(), edgeMat(),
+      surfMat(innerLeftTex),  // +Z = inside face (visible when open)
+      surfMat(backTex),       // -Z = outside/back face
+    ])
     leftPanel.position.x = -halfW / 2
+    leftPanel.rotation.y =  openAngle   // rotated open to the left
     leftPanel.castShadow = true
     leftPanel.receiveShadow = true
     group.add(leftPanel)
 
-    // Right panel: outside = front cover, inside = inner-right
-    const rInMat  = new THREE.MeshStandardMaterial({ map: innerRightTex, roughness: 0.82 })
-    const rOutMat = new THREE.MeshStandardMaterial({ map: frontTex,       roughness: 0.72, metalness: 0.02 })
-    const rightPanel = new THREE.Mesh(panelGeo, [edgeMat(), edgeMat(), edgeMat(), edgeMat(), rInMat, rOutMat])
+    // Right panel — front cover outside, inner-right inside
+    const rightPanel = new THREE.Mesh(panelGeo, [
+      edgeMat(), edgeMat(), edgeMat(), edgeMat(),
+      surfMat(innerRightTex), // +Z = inside face
+      surfMat(frontTex),      // -Z = outside/front face
+    ])
     rightPanel.position.x = halfW / 2
+    rightPanel.rotation.y = -openAngle  // rotated open to the right
     rightPanel.castShadow = true
     rightPanel.receiveShadow = true
     group.add(rightPanel)
 
-    // Spine strip between panels
-    const spineGeo  = new THREE.BoxGeometry(0.045, SZ, ST)
-    const spineMesh = new THREE.Mesh(spineGeo, edgeMat())
-    group.add(spineMesh)
+    // Spine between panels
+    const spine = new THREE.Mesh(new THREE.BoxGeometry(0.05, SZ, ST), edgeMat())
+    group.add(spine)
 
   } else {
-    // ── Standard single sleeve ──
+    // Standard single sleeve
     const sleeveGeo = new THREE.BoxGeometry(SZ, SZ, ST)
-    const sleeve    = new THREE.Mesh(sleeveGeo, [
-      edgeMat(), edgeMat(), edgeMat(), edgeMat(), frontMat, backMat,
+    // BoxGeometry face order: +X, -X, +Y, -Y, +Z (front), -Z (back)
+    const sleeve = new THREE.Mesh(sleeveGeo, [
+      edgeMat(), edgeMat(), edgeMat(), edgeMat(),
+      surfMat(frontTex),
+      surfMat(backTex),
     ])
     sleeve.name = 'sleeve'
     sleeve.castShadow = true
     sleeve.receiveShadow = true
     group.add(sleeve)
 
-    // Inner sleeve peeking slightly above the top edge
-    const iMat    = new THREE.MeshStandardMaterial({ map: innerTex, roughness: 0.85 })
-    const innerGeo = new THREE.BoxGeometry(SZ * 0.92, SZ * 0.92, ST * 0.5)
-    const inner    = new THREE.Mesh(innerGeo, [
-      edgeMat(), edgeMat(), edgeMat(), edgeMat(), iMat, iMat,
-    ])
+    // Inner sleeve peeking from top
+    const inner = new THREE.Mesh(
+      new THREE.BoxGeometry(SZ * 0.92, SZ * 0.92, ST * 0.5),
+      [edgeMat(), edgeMat(), edgeMat(), edgeMat(), surfMat(innerTex), surfMat(innerTex)]
+    )
     inner.position.set(0, 0.1, 0.014)
     inner.castShadow = true
     group.add(inner)
   }
 
-  // ─── Vinyl record — flat & horizontal, below sleeve, auto-spinning ────────
+  // ─── Vinyl record — flat, below sleeve ────────────────────────────────────
   const VINYL_R = 1.45
   const VINYL_T = 0.034
 
-  const vThreeColor = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
+  const vColor = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
+  const clearOpts = isClear ? { transparent: true, depthWrite: false } : {}
 
-  // Top face: groove texture. Bottom and edge: tinted solid.
-  const vinylTopMat = new THREE.MeshStandardMaterial({
-    map:       vinylTex,
-    roughness: 0.12,
-    metalness: 0.88,
-    ...(isClear ? { transparent: true, opacity: 0.42, color: new THREE.Color(0xbbddee) } : {}),
+  const topMat  = new THREE.MeshStandardMaterial({
+    map: vinylTex, roughness: 0.12, metalness: 0.88,
+    ...(isClear ? { ...clearOpts, opacity: 0.45, color: new THREE.Color(0xbbddee) } : {}),
   })
-  const vinylBotMat = new THREE.MeshStandardMaterial({
-    color:     vThreeColor,
-    roughness: 0.18,
-    metalness: 0.82,
-    ...(isClear ? { transparent: true, opacity: 0.32 } : {}),
+  const botMat  = new THREE.MeshStandardMaterial({
+    color: vColor, roughness: 0.18, metalness: 0.82,
+    ...(isClear ? { ...clearOpts, opacity: 0.32 } : {}),
   })
-  const vinylEdgeMat = new THREE.MeshStandardMaterial({
-    color:     vThreeColor,
-    roughness: 0.22,
-    metalness: 0.65,
-    ...(isClear ? { transparent: true, opacity: 0.36 } : {}),
+  const edgeMatV = new THREE.MeshStandardMaterial({
+    color: vColor, roughness: 0.22, metalness: 0.65,
+    ...(isClear ? { ...clearOpts, opacity: 0.36 } : {}),
   })
 
-  // CylinderGeometry material slots: [side/edge, top+Y, bottom-Y]
-  const vinylGeo  = new THREE.CylinderGeometry(VINYL_R, VINYL_R, VINYL_T, 128, 1, false)
-  const vinylDisc = new THREE.Mesh(vinylGeo, [vinylEdgeMat, vinylTopMat, vinylBotMat])
+  // CylinderGeometry material order: [side, top(+Y), bottom(-Y)]
+  const vinylDisc = new THREE.Mesh(
+    new THREE.CylinderGeometry(VINYL_R, VINYL_R, VINYL_T, 128, 1, false),
+    [edgeMatV, topMat, botMat]
+  )
   vinylDisc.name = 'vinylDisc'
   vinylDisc.castShadow = true
   vinylDisc.receiveShadow = true
 
-  // Bevel rings — same material as edge, prevents visible top/bottom seam line
+  // Bevel torus rings — must be rotated 90° so they lie flat (torus default is vertical)
   const bevelGeo = new THREE.TorusGeometry(VINYL_R - 0.003, 0.006, 12, 128)
-  const bTop = new THREE.Mesh(bevelGeo, vinylEdgeMat)
-  bTop.position.y  =  VINYL_T / 2
-  const bBot = new THREE.Mesh(bevelGeo, vinylEdgeMat)
-  bBot.position.y  = -VINYL_T / 2
+  const bTop = new THREE.Mesh(bevelGeo, edgeMatV)
+  bTop.rotation.x =  Math.PI / 2   // rotate torus to lie flat
+  bTop.position.y =  VINYL_T / 2
+  const bBot = new THREE.Mesh(bevelGeo, edgeMatV)
+  bBot.rotation.x =  Math.PI / 2
+  bBot.position.y = -VINYL_T / 2
 
   const recordGroup = new THREE.Group()
-  recordGroup.name  = 'recordGroup'
+  recordGroup.name = 'recordGroup'
   recordGroup.add(vinylDisc, bTop, bBot)
 
-  // Flat layout: record sits below the sleeve, centered horizontally
-  // Cylinder default is already horizontal (Y-up), so no rotation needed
+  // Position record flat below the sleeve
   const sleeveBottom = -SZ / 2
-  recordGroup.position.set(0, sleeveBottom - VINYL_R * 0.6, 0.1)
+  recordGroup.position.set(0, sleeveBottom - VINYL_R * 0.65, 0.05)
 
   group.add(recordGroup)
 
-  // ─── Soft ground shadow ───────────────────────────────────────────────────
+  // ─── Shadow plane ─────────────────────────────────────────────────────────
   const shadowPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(16, 16),
-    new THREE.ShadowMaterial({ opacity: 0.10 }),
+    new THREE.PlaneGeometry(18, 18),
+    new THREE.ShadowMaterial({ opacity: 0.08 })
   )
   shadowPlane.rotation.x = -Math.PI / 2
-  shadowPlane.position.y = sleeveBottom - VINYL_R * 1.15
+  shadowPlane.position.y = sleeveBottom - VINYL_R * 1.2
   shadowPlane.receiveShadow = true
   group.add(shadowPlane)
 
-  // Natural starting tilt
+  // Starting orientation
   group.rotation.x = -0.16
   group.rotation.y =  0.22
 
   return { group, recordGroup, vinylDisc }
 }
 
-/**
- * Set up scene lighting and background.
- * White void = white background + soft neutral lighting.
- */
 export function setupLights(scene) {
-  // White void background
   scene.background = new THREE.Color(0xffffff)
   scene.fog = null
 
-  // Remove any stale lights
   const toRemove = []
   scene.traverse(obj => { if (obj.isLight) toRemove.push(obj) })
   toRemove.forEach(l => scene.remove(l))
 
-  // Bright ambient so the white bg reads cleanly
   scene.add(new THREE.AmbientLight(0xffffff, 0.7))
 
-  // Main key light (slightly warm, top-right-front)
   const key = new THREE.DirectionalLight(0xfff8f0, 1.6)
   key.position.set(5, 9, 6)
   key.castShadow = true
@@ -213,19 +196,15 @@ export function setupLights(scene) {
   key.shadow.mapSize.height = 2048
   key.shadow.camera.near   = 0.5
   key.shadow.camera.far    = 50
-  key.shadow.camera.left   = -8
-  key.shadow.camera.right  =  8
-  key.shadow.camera.top    =  8
-  key.shadow.camera.bottom = -8
+  key.shadow.camera.left = key.shadow.camera.bottom = -8
+  key.shadow.camera.right = key.shadow.camera.top   =  8
   key.shadow.bias = -0.0004
   scene.add(key)
 
-  // Cool fill from the left
   const fill = new THREE.DirectionalLight(0xd0e4ff, 0.45)
   fill.position.set(-5, 3, 2)
   scene.add(fill)
 
-  // Subtle rim from below-back
   const rim = new THREE.DirectionalLight(0xffe8d0, 0.35)
   rim.position.set(0, -4, -5)
   scene.add(rim)

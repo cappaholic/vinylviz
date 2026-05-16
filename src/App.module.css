@@ -3,4 +3,62 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  position: relative;
+}
+
+.sidebar_wrap {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible;
+}
+
+.sidebar_wrap.open {
+  width: var(--sidebar-width);
+}
+
+.sidebar_wrap.closed {
+  width: 0;
+}
+
+.sidebar_wrap.closed > aside {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sidebar_wrap.open > aside {
+  opacity: 1;
+  transition: opacity 0.2s 0.1s;
+}
+
+/* Pull tab that sticks out from the sidebar edge */
+.sidebar_tab {
+  position: absolute;
+  right: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 64px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  color: var(--text2);
+  font-size: 16px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s, color 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.sidebar_tab:hover {
+  background: var(--surface2);
+  color: var(--accent);
 }
