@@ -52,6 +52,9 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
         {/* ── Artwork ── */}
         <section className={styles.section}>
           <SectionLabel>Artwork</SectionLabel>
+          <p className={styles.hint_text} style={{marginBottom: 10}}>
+            💡 Square images work best. Non-square art will be centre-cropped to fit.
+          </p>
 
           <UploadZone id="front" label="Front Cover" sublabel="Main album artwork" icon="↑"
             dataUrl={images.front} onUpload={url => onImageUpload('front', url)} />

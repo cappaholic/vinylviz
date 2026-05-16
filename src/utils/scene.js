@@ -27,22 +27,39 @@ export async function buildAlbumScene(scene, images, meta) {
   const isClear    = vinylColor === 'clear'
 
   // ─── Textures ─────────────────────────────────────────────────────────────
+  // Helper — loads texture and centre-crops non-square images to square
+  // so artwork is never stretched, just cropped like CSS object-fit: cover
   const makeTex = (dataUrl, fallback) => {
     if (!dataUrl) return solidTexture(fallback || '#1c1c1c')
-    const tex = new THREE.TextureLoader().load(dataUrl)
-    tex.colorSpace = THREE.SRGBColorSpace
-    tex.flipY = true
-    return tex
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const size = Math.min(img.width, img.height) // largest square that fits
+        const canvas = document.createElement('canvas')
+        canvas.width = canvas.height = size
+        const ctx = canvas.getContext('2d')
+        // Centre-crop
+        const sx = (img.width  - size) / 2
+        const sy = (img.height - size) / 2
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size)
+        const tex = new THREE.CanvasTexture(canvas)
+        tex.colorSpace = THREE.SRGBColorSpace
+        tex.flipY = true
+        resolve(tex)
+      }
+      img.onerror = () => resolve(solidTexture(fallback || '#1c1c1c'))
+      img.src = dataUrl
+    })
   }
 
-  const frontTex      = makeTex(images.front,      '#1c1c1c')
+  const frontTex      = await makeTex(images.front,      '#1c1c1c')
   const backTex       = images.back
-    ? makeTex(images.back, '#111')
+    ? await makeTex(images.back, '#111')
     : generateBackCoverTexture({ artist: meta.artist, albumTitle: meta.albumTitle, year: meta.year, tracks: meta.tracks })
 
   // Inner sleeves — fall back to a dark grey if not provided
-  const innerLeftTex  = makeTex(images.innerLeft,  '#1a1a1a')
-  const innerRightTex = makeTex(images.innerRight, '#1a1a1a')
+  const innerLeftTex  = await makeTex(images.innerLeft,  '#1a1a1a')
+  const innerRightTex = await makeTex(images.innerRight, '#1a1a1a')
 
   const vinylTex = await generateVinylTextureAsync({
     artist: meta.artist, albumTitle: meta.albumTitle,
@@ -58,49 +75,40 @@ export async function buildAlbumScene(scene, images, meta) {
 
   // ─── Sleeve / Gatefold ───────────────────────────────────────────────────
   if (isGatefold) {
-    // Two panels meeting at a center spine, opened like the reference photo.
-    // The open angle controls how wide the V is — matching the reference image.
-    const halfW    = SZ / 2
-    const panelGeo = new THREE.BoxGeometry(halfW, SZ, ST)
-
-    // Open angle: ~40° each side gives a realistic open-book look
+    const halfW     = SZ / 2
+    const panelGeo  = new THREE.BoxGeometry(halfW, SZ, ST)
     const openAngle = THREE.MathUtils.degToRad(42)
 
-    // ── Left panel ──
-    // Outside face (-Z) = back cover  |  Inside face (+Z) = inner-left art
-    const leftPanel = new THREE.Mesh(panelGeo, [
-      edgeMat(), edgeMat(), edgeMat(), edgeMat(),
-      surfMat(innerLeftTex),  // +Z inside
-      surfMat(backTex),       // -Z outside / back cover
-    ])
-    // Pivot from the right edge (spine), so shift left by half panel width first
-    leftPanel.position.x = -halfW / 2
-    // Rotate open to the left around Y axis at the spine
-    leftPanel.rotation.y = openAngle
-    leftPanel.castShadow = true
-    leftPanel.receiveShadow = true
-    group.add(leftPanel)
+    // Each panel pivots from the spine (x=0) by wrapping the mesh in a pivot group.
+    // The mesh is offset so its spine edge sits exactly at the pivot origin.
 
-    // ── Right panel ──
-    // Outside face (-Z) = front cover  |  Inside face (+Z) = inner-right art
-    const rightPanel = new THREE.Mesh(panelGeo, [
+    // ── Left panel — pivots from its RIGHT edge ──
+    const leftPivot = new THREE.Group()
+    const leftMesh  = new THREE.Mesh(panelGeo, [
       edgeMat(), edgeMat(), edgeMat(), edgeMat(),
-      surfMat(innerRightTex), // +Z inside
-      surfMat(frontTex),      // -Z outside / front cover
+      surfMat(innerLeftTex), // +Z = inside
+      surfMat(backTex),      // -Z = back cover (outside)
     ])
-    rightPanel.position.x = halfW / 2
-    rightPanel.rotation.y = -openAngle
-    rightPanel.castShadow = true
-    rightPanel.receiveShadow = true
-    group.add(rightPanel)
+    leftMesh.position.x = -halfW / 2
+    leftMesh.castShadow = true
+    leftMesh.receiveShadow = true
+    leftPivot.add(leftMesh)
+    leftPivot.rotation.y = openAngle
+    group.add(leftPivot)
 
-    // ── Spine strip ──
-    const spine = new THREE.Mesh(
-      new THREE.BoxGeometry(0.05, SZ, ST * 0.8),
-      edgeMat()
-    )
-    spine.position.x = 0
-    group.add(spine)
+    // ── Right panel — pivots from its LEFT edge ──
+    const rightPivot = new THREE.Group()
+    const rightMesh  = new THREE.Mesh(panelGeo, [
+      edgeMat(), edgeMat(), edgeMat(), edgeMat(),
+      surfMat(innerRightTex), // +Z = inside
+      surfMat(frontTex),      // -Z = front cover (outside)
+    ])
+    rightMesh.position.x = halfW / 2
+    rightMesh.castShadow = true
+    rightMesh.receiveShadow = true
+    rightPivot.add(rightMesh)
+    rightPivot.rotation.y = -openAngle
+    group.add(rightPivot)
 
   } else {
     // Standard closed sleeve — front visible, back on the reverse
@@ -167,9 +175,9 @@ export async function buildAlbumScene(scene, images, meta) {
   recordGroup.name = 'recordGroup'
   recordGroup.add(vinylDisc, bTop, bBot)
 
-  // Flat below the sleeve
+  // Flat below the sleeve — closer to camera, slightly higher
   const sleeveBottom = -SZ / 2
-  recordGroup.position.set(0, sleeveBottom - VINYL_R * 0.65, 0.05)
+  recordGroup.position.set(0, sleeveBottom - VINYL_R * 0.45, 0.8)
   group.add(recordGroup)
 
   // ─── Shadow ───────────────────────────────────────────────────────────────
