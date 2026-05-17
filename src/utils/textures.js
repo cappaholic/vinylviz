@@ -97,69 +97,78 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   canvas.height = SIZE
   const ctx = canvas.getContext('2d')
 
-  // ── Base disc colour ──────────────────────────────────────────────────────
-  const baseColor = isClear ? 'rgba(180,210,230,0.2)' : (vinylColor || '#080808')
-  ctx.fillStyle = baseColor
+  // ── Parse the vinyl colour for groove rendering ───────────────────────────
+  // We draw grooves in the actual vinyl colour so it looks correct at any opacity
+  const baseHex = isClear ? '#99bbcc' : (vinylColor || '#080808')
+
+  // Helper: parse hex to rgb components 0-255
+  const hexToRgb = (hex) => {
+    const h = hex.replace('#', '')
+    const full = h.length === 3
+      ? h.split('').map(c => parseInt(c + c, 16))
+      : [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]
+    return full
+  }
+  const [br, bg, bb] = isClear ? [153, 187, 204] : hexToRgb(baseHex)
+
+  // Lighten: add white
+  const lighten = (amount) =>
+    `rgb(${Math.round(Math.min(255, br + amount))},${Math.round(Math.min(255, bg + amount))},${Math.round(Math.min(255, bb + amount))})`
+  // Darken: subtract
+  const darken = (amount) =>
+    `rgb(${Math.round(Math.max(0, br - amount))},${Math.round(Math.max(0, bg - amount))},${Math.round(Math.max(0, bb - amount))})`
+
+  // ── Base disc fill ────────────────────────────────────────────────────────
+  ctx.fillStyle = baseHex
   ctx.beginPath()
   ctx.arc(cx, cy, SIZE / 2 - 1, 0, Math.PI * 2)
   ctx.fill()
 
   // ── Groove track lines ────────────────────────────────────────────────────
-  // Real vinyl: ~200-300 grooves. We render 120 for visibility at this resolution.
-  // Groove area: from label edge (~28% r) to run-out edge (~95% r)
-  const R_MAX    = SIZE / 2 - 2
-  const GS       = R_MAX * 0.30   // groove start radius (px)
-  const GE       = R_MAX * 0.94   // groove end radius
-  const GROOVES  = 120
+  const R_MAX   = SIZE / 2 - 2
+  const GS      = R_MAX * 0.30
+  const GE      = R_MAX * 0.94
+  const GROOVES = 120
 
   for (let i = 0; i < GROOVES; i++) {
     const t = i / GROOVES
     const r = GS + t * (GE - GS)
 
-    // Alternate between slightly lighter and darker rings for the groove illusion
-    let lum, alpha
-    if (isClear) {
-      alpha = 0.05 + (i % 4 === 0 ? 0.10 : i % 2 === 0 ? 0.06 : 0.03)
-      ctx.strokeStyle = `rgba(255,255,255,${alpha})`
+    if (i % 5 === 0) {
+      ctx.strokeStyle = lighten(46)   // track gap — lighter
+      ctx.lineWidth   = 2.2
+    } else if (i % 2 === 0) {
+      ctx.strokeStyle = lighten(20)   // groove wall
+      ctx.lineWidth   = 1.2
     } else {
-      // Grooves appear slightly lighter than the base vinyl colour
-      // Every 5th groove is brighter (simulates groups of tracks)
-      if (i % 5 === 0) {
-        lum = 38   // brighter — track gap
-      } else if (i % 2 === 0) {
-        lum = 22   // mid groove
-      } else {
-        lum = 12   // dark groove valley
-      }
-      ctx.strokeStyle = `rgb(${lum},${lum},${lum})`
+      ctx.strokeStyle = darken(16)    // groove valley
+      ctx.lineWidth   = 1.2
     }
-
-    ctx.lineWidth = i % 5 === 0 ? 2.2 : 1.2
     ctx.beginPath()
     ctx.arc(cx, cy, r, 0, Math.PI * 2)
     ctx.stroke()
   }
 
-  // ── Radial shimmer (subtle rainbow sheen) ────────────────────────────────
+  // ── Radial shimmer sheen ──────────────────────────────────────────────────
   const shimmer = ctx.createRadialGradient(cx - 100, cy - 120, 20, cx, cy, R_MAX)
-  shimmer.addColorStop(0,    'rgba(255,255,255,0.07)')
-  shimmer.addColorStop(0.35, 'rgba(255,255,200,0.03)')
-  shimmer.addColorStop(0.65, 'rgba(200,200,255,0.03)')
+  shimmer.addColorStop(0,    'rgba(255,255,255,0.10)')
+  shimmer.addColorStop(0.35, 'rgba(255,255,255,0.04)')
+  shimmer.addColorStop(0.65, 'rgba(255,255,255,0.02)')
   shimmer.addColorStop(1,    'rgba(0,0,0,0)')
   ctx.fillStyle = shimmer
   ctx.beginPath()
   ctx.arc(cx, cy, R_MAX, 0, Math.PI * 2)
   ctx.fill()
 
-  // ── Lead-in / run-out silent grooves (slightly brighter gap rings) ────────
-  ctx.lineWidth = 3.5
-  ctx.strokeStyle = isClear ? 'rgba(255,255,255,0.14)' : 'rgba(80,80,80,0.9)'
+  // ── Lead-in / run-out silent grooves ─────────────────────────────────────
+  ctx.lineWidth   = 3.5
+  ctx.strokeStyle = lighten(56)
   ctx.beginPath(); ctx.arc(cx, cy, GS - 6, 0, Math.PI * 2); ctx.stroke()
   ctx.beginPath(); ctx.arc(cx, cy, GE + 6, 0, Math.PI * 2); ctx.stroke()
 
   // ── Label area ────────────────────────────────────────────────────────────
-  const LR = R_MAX * 0.285  // label radius ≈ same proportion as real vinyl
-  ctx.fillStyle = isClear ? 'rgba(140,170,190,0.3)' : '#111'
+  const LR = R_MAX * 0.285
+  ctx.fillStyle = '#111111'
   ctx.beginPath()
   ctx.arc(cx, cy, LR, 0, Math.PI * 2)
   ctx.fill()
@@ -169,26 +178,25 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
     ctx.beginPath()
     ctx.arc(cx, cy, LR - 2, 0, Math.PI * 2)
     ctx.clip()
-    ctx.drawImage(img, cx - LR, cy - LR, LR * 2, LR * 2)
+    // Centre-crop the label image into the circular area
+    const iw = img.width, ih = img.height
+    const minDim = Math.min(iw, ih)
+    const sx = (iw - minDim) / 2
+    const sy = (ih - minDim) / 2
+    ctx.drawImage(img, sx, sy, minDim, minDim, cx - LR, cy - LR, LR * 2, LR * 2)
     ctx.restore()
   } else {
-    // Default styled label
+    // Styled default label
     const lg = ctx.createRadialGradient(cx - 24, cy - 24, 0, cx, cy, LR)
-    lg.addColorStop(0,   isClear ? '#1a2a35' : '#2a1f0a')
-    lg.addColorStop(0.6, isClear ? '#0e1820' : '#1a1205')
-    lg.addColorStop(1,   isClear ? '#080e14' : '#0e0a03')
+    lg.addColorStop(0,   '#2a1f0a')
+    lg.addColorStop(0.6, '#1a1205')
+    lg.addColorStop(1,   '#0e0a03')
     ctx.fillStyle = lg
-    ctx.beginPath()
-    ctx.arc(cx, cy, LR - 2, 0, Math.PI * 2)
-    ctx.fill()
-
-    // Label ring line
-    ctx.strokeStyle = 'rgba(200,169,110,0.3)'
+    ctx.beginPath(); ctx.arc(cx, cy, LR - 2, 0, Math.PI * 2); ctx.fill()
+    ctx.strokeStyle = 'rgba(200,169,110,0.35)'
     ctx.lineWidth   = 2
     ctx.beginPath(); ctx.arc(cx, cy, LR - 10, 0, Math.PI * 2); ctx.stroke()
-
-    ctx.textAlign    = 'center'
-    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
     if (artist) {
       ctx.fillStyle = '#c8a96e'
       ctx.font      = `bold 26px Georgia, serif`
@@ -202,10 +210,8 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   }
 
   // ── Centre spindle hole marker ────────────────────────────────────────────
-  // The actual geometry hole is cut by RingGeometry.
-  // We draw a dark fill here so the hole looks dark, not showing through the base.
-  const holeR = R_MAX * 0.03   // ~proportional to real 0.286" hole on 12" disc
-  ctx.fillStyle = '#000'
+  const holeR = R_MAX * 0.03
+  ctx.fillStyle = '#000000'
   ctx.beginPath(); ctx.arc(cx, cy, holeR + 2, 0, Math.PI * 2); ctx.fill()
 
   return canvas
@@ -217,6 +223,7 @@ export async function generateVinylTextureAsync({ artist, albumTitle, labelDataU
   const finish = (canvas) => {
     const tex = new THREE.CanvasTexture(canvas)
     tex.colorSpace = THREE.SRGBColorSpace
+    tex.flipY = false  // CylinderGeometry top face UV doesn't need flipY
     return tex
   }
 

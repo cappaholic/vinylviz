@@ -150,21 +150,23 @@ export async function buildAlbumScene(scene, images, meta) {
   const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
   const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
   const useTransp = isClear || !isBlack
-  const opacity   = isClear ? 0.38 : isBlack ? 1.0 : 0.60
+  // Opacity: clear = very see-through, coloured = slightly see-through (like ref photo)
+  const opacity = isClear ? 0.40 : isBlack ? 1.0 : 0.72
   const transpOpts = useTransp ? { transparent: true, depthWrite: false, opacity } : {}
-  // Colour tint multiplies with the texture — gives the vinyl its hue
-  const colorOverride = useTransp ? { color: isClear ? new THREE.Color(0xbbddee) : vColor } : {}
 
+  // The vinyl texture already has the colour baked in (generated with vinylColor).
+  // Do NOT set a color override — it would multiply-darken the texture.
+  // For the face materials just use the texture as-is with transparency.
   const topMat = new THREE.MeshStandardMaterial({
-    map: vinylTex, roughness: 0.10, metalness: 0.90,
-    ...transpOpts, ...colorOverride,
+    map: vinylTex, roughness: 0.08, metalness: 0.92,
+    ...transpOpts,
   })
   const botMat = new THREE.MeshStandardMaterial({
-    map: vinylTex, roughness: 0.10, metalness: 0.90,
-    ...transpOpts, ...colorOverride,
+    map: vinylTex, roughness: 0.08, metalness: 0.92,
+    ...transpOpts,
   })
   const edgeMatV = new THREE.MeshStandardMaterial({
-    color: vColor, roughness: 0.22, metalness: 0.65,
+    color: vColor, roughness: 0.20, metalness: 0.70,
     ...transpOpts,
   })
 
