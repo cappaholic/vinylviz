@@ -189,20 +189,20 @@ export async function buildAlbumScene(scene, images, meta) {
   const labelTop = new THREE.Mesh(labelGeo, labelMat)
   labelTop.rotation.x = -Math.PI / 2
   labelTop.position.y =  VT / 2 + 0.0001
+  labelTop.renderOrder = 1
   const labelBot = new THREE.Mesh(labelGeo, labelMat)
   labelBot.rotation.x =  Math.PI / 2
   labelBot.position.y = -VT / 2 - 0.0001
+  labelBot.renderOrder = 1
 
-  // ── Spindle hole — exact vinyl thickness, vinyl-coloured edge ────────────
-  // Top and bottom caps are white (void colour), side edge matches vinyl colour
+  // ── Spindle hole — tall enough to punch through disc AND both label stickers
   const holeTopMat  = new THREE.MeshBasicMaterial({ color: 0xffffff })
   const holeEdgeMat = new THREE.MeshBasicMaterial({ color: vColor })
-  // CylinderGeometry material order: [side, top(+Y), bottom(-Y)]
   const holeCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT, 48, 1, false),
+    new THREE.CylinderGeometry(HR, HR, VT + 0.004, 48, 1, false),
     [holeEdgeMat, holeTopMat, holeTopMat]
   )
-  holeCap.renderOrder = 1
+  holeCap.renderOrder = 2  // above label (renderOrder 1) and disc
 
   const recordGroup = new THREE.Group()
   recordGroup.name  = 'recordGroup'

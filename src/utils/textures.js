@@ -133,24 +133,23 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   // Fewer grooves, more visible — simulates the track-group separators
   const GROOVES = 160
 
+  // Detect light-coloured vinyl — grooves need to go darker not lighter
+  const isLight = (br + bg + bb) > 400
+
   for (let i = 0; i < GROOVES; i++) {
     const t = i / GROOVES
     const r = GS + t * (GE - GS)
 
     if (i % 8 === 0) {
-      // Track separator — noticeably darker, wider line
-      ctx.strokeStyle = darken(40)
+      ctx.strokeStyle = isLight ? darken(90)  : darken(40)
       ctx.lineWidth   = 3.5
     } else if (i % 4 === 0) {
-      // Secondary groove wall — slightly darker
-      ctx.strokeStyle = darken(22)
+      ctx.strokeStyle = isLight ? darken(55)  : darken(22)
       ctx.lineWidth   = 1.8
     } else if (i % 2 === 0) {
-      // Groove wall — slightly lighter (reflective face)
-      ctx.strokeStyle = lighten(18)
+      ctx.strokeStyle = isLight ? darken(28)  : lighten(18)
       ctx.lineWidth   = 1.0
     } else {
-      // Groove valley — base colour
       ctx.strokeStyle = baseHex
       ctx.lineWidth   = 0.8
     }
@@ -172,7 +171,7 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
 
   // ── Lead-in / run-out silent grooves — clearly visible bright rings ───────
   ctx.lineWidth   = 5
-  ctx.strokeStyle = lighten(70)
+  ctx.strokeStyle = isLight ? darken(110) : lighten(70)
   ctx.beginPath(); ctx.arc(cx, cy, GS - 8, 0, Math.PI * 2); ctx.stroke()
   ctx.lineWidth   = 4
   ctx.beginPath(); ctx.arc(cx, cy, GE + 8, 0, Math.PI * 2); ctx.stroke()
