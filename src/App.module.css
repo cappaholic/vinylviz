@@ -6,34 +6,33 @@
   position: relative;
 }
 
+/* Sidebar animates by sliding off-screen, NOT by shrinking —
+   this keeps the viewport div's size constant so the canvas never reflows. */
 .sidebar_wrap {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: var(--sidebar-width);
+  z-index: 5;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
-  flex-shrink: 0;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
 }
 
 .sidebar_wrap.open {
-  width: var(--sidebar-width);
+  transform: translateX(0);
 }
 
 .sidebar_wrap.closed {
-  width: 0;
+  transform: translateX(calc(-1 * var(--sidebar-width)));
 }
 
 .sidebar_wrap.closed > aside {
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
 }
 
-.sidebar_wrap.open > aside {
-  opacity: 1;
-  transition: opacity 0.2s 0.1s;
-}
-
-/* Pull tab that sticks out from the sidebar edge */
+/* Pull tab */
 .sidebar_tab {
   position: absolute;
   right: -28px;
@@ -61,4 +60,11 @@
 .sidebar_tab:hover {
   background: var(--surface2);
   color: var(--accent);
+}
+
+/* Viewport always takes the full layout — sidebar overlays it */
+.viewport_wrap {
+  flex: 1;
+  height: 100%;
+  position: relative;
 }

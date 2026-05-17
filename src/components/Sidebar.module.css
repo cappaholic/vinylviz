@@ -27,72 +27,59 @@
 .optional { color: var(--text3); }
 .hint_text { font-size: 10px; color: var(--text3); margin-top: 6px; line-height: 1.5; }
 
-/* ── Inner sleeve section ── */
-.inner_sleeve_header {
+/* ── Image fit dropdown ── */
+.fit_row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-  margin-top: 4px;
+  margin-bottom: 10px;
 }
-
-.inner_sleeve_label {
+.fit_label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text2);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-
-.badge_gatefold {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--success);
-  background: rgba(76, 175, 125, 0.12);
-  border: 1px solid rgba(76, 175, 125, 0.3);
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-
-.badge_optional {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text3);
+.fit_select {
+  flex: 1;
   background: var(--surface2);
   border: 1px solid var(--border);
-  padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
 }
+.fit_select:focus { border-color: var(--accent); }
 
-.inner_sleeve_row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+/* ── Inner sleeves ── */
+.inner_sleeve_header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px; margin-top: 4px;
 }
-
-.inner_sleeve_half {
-  flex: 1;
-  min-width: 0;
+.inner_sleeve_label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2);
 }
-
+.badge_gatefold {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--success);
+  background: rgba(76,175,125,0.12); border: 1px solid rgba(76,175,125,0.3); padding: 2px 6px; border-radius: 3px;
+}
+.badge_optional {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3);
+  background: var(--surface2); border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px;
+}
+.inner_sleeve_row { display: flex; gap: 8px; margin-bottom: 8px; }
+.inner_sleeve_half { flex: 1; min-width: 0; }
 .inner_side_label {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  margin-bottom: 4px;
-}
-
-/* Make UploadZone smaller inside the half-width slots */
-.inner_sleeve_half :global(.upload-zone),
-.inner_sleeve_half > div {
-  margin-bottom: 0;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px;
 }
 
 /* ── Vinyl chips ── */
 .vinyl_presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; }
-
 .vinyl_chip {
   width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border2);
   cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -105,14 +92,13 @@
   font-size: 9px; color: var(--text3); white-space: nowrap; pointer-events: none;
 }
 .chip_icon { font-size: 16px; color: var(--text2); line-height: 1; }
-
 .custom_color_row { display: flex; align-items: center; gap: 8px; margin-top: 22px; }
 .color_picker {
   width: 36px; height: 36px; border: 1px solid var(--border2); border-radius: var(--radius);
   padding: 2px; background: var(--surface2); cursor: pointer; flex-shrink: 0;
 }
 
-/* ── Fields ── */
+/* ── Form fields ── */
 .field { margin-bottom: 10px; }
 .field_label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 5px; }
 .input {

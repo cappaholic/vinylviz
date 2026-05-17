@@ -7,7 +7,8 @@ import styles from './App.module.css'
 
 const DEFAULT_META = {
   artist: '', albumTitle: '', year: '',
-  sleeveStyle: 'standard', vinylColor: '#080808',
+  vinylColor: '#080808',
+  imageFit: 'crop',
 }
 const DEFAULT_TRACKS = ['', '']
 
@@ -42,7 +43,6 @@ export default function App() {
       setAlbumRefs(refs)
       setRendered(true)
       setActiveView('perspective')
-      // Collapse sidebar and start spin after render
       setSidebarOpen(false)
     } catch (err) {
       console.error('Scene build error:', err)
@@ -62,7 +62,6 @@ export default function App() {
     if (nowSpinning) setActiveView('record')
   }, [toggleSpin])
 
-  // Auto-spin after first render
   const firstRender = useRef(true)
   useEffect(() => {
     if (isRendered && firstRender.current) {
@@ -76,6 +75,7 @@ export default function App() {
 
   return (
     <div className={styles.layout}>
+      {/* Sidebar overlays the viewport — no layout shift */}
       <div className={`${styles.sidebar_wrap} ${sidebarOpen ? styles.open : styles.closed}`}>
         <Sidebar
           images={images} meta={meta} tracks={tracks}
@@ -85,25 +85,26 @@ export default function App() {
           onRender={handleRender}
           isRendering={isRendering}
         />
-        {/* Toggle tab on right edge of sidebar */}
         <button
           className={styles.sidebar_tab}
           onClick={() => setSidebarOpen(o => !o)}
           title={sidebarOpen ? 'Hide panel' : 'Show panel'}
-          aria-label={sidebarOpen ? 'Hide panel' : 'Show panel'}
         >
           {sidebarOpen ? '‹' : '›'}
         </button>
       </div>
 
-      <Viewport
-        canvasRef={canvasRef}
-        isRendered={isRendered}
-        activeView={activeView}
-        onSetView={handleSetView}
-        isSpinning={isSpinning}
-        onToggleSpin={handleToggleSpin}
-      />
+      {/* Viewport always fills full layout — sidebar slides over it */}
+      <div className={styles.viewport_wrap}>
+        <Viewport
+          canvasRef={canvasRef}
+          isRendered={isRendered}
+          activeView={activeView}
+          onSetView={handleSetView}
+          isSpinning={isSpinning}
+          onToggleSpin={handleToggleSpin}
+        />
+      </div>
     </div>
   )
 }

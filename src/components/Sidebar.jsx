@@ -30,14 +30,13 @@ function Field({ label, children }) {
 }
 
 export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaChange, onTracksChange, onRender, isRendering }) {
-  const vinylColor   = meta.vinylColor || '#080808'
-  const hasInnerArt  = !!(images.innerLeft || images.innerRight)
+  const vinylColor    = meta.vinylColor || '#080808'
+  const hasInnerArt   = !!(images.innerLeft || images.innerRight)
   const isCustomColor = !VINYL_PRESETS.slice(0, -1).find(p => p.value === vinylColor)
 
   const addTrack    = () => { if (tracks.length < 20) onTracksChange([...tracks, '']) }
   const updateTrack = (i, val) => { const n = [...tracks]; n[i] = val; onTracksChange(n) }
   const removeTrack = (i) => { if (tracks.length > 1) onTracksChange(tracks.filter((_, j) => j !== i)) }
-
   const handlePreset = (val) => { if (val !== 'custom') onMetaChange('vinylColor', val) }
 
   return (
@@ -52,9 +51,19 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
         {/* ── Artwork ── */}
         <section className={styles.section}>
           <SectionLabel>Artwork</SectionLabel>
-          <p className={styles.hint_text} style={{marginBottom: 10}}>
-            💡 Square images work best. Non-square art will be centre-cropped to fit.
-          </p>
+
+          {/* Image fit option */}
+          <div className={styles.fit_row}>
+            <span className={styles.fit_label}>Image fit</span>
+            <select
+              className={styles.fit_select}
+              value={meta.imageFit || 'crop'}
+              onChange={e => onMetaChange('imageFit', e.target.value)}
+            >
+              <option value="crop">Crop to square (recommended)</option>
+              <option value="stretch">Stretch to fit</option>
+            </select>
+          </div>
 
           <UploadZone id="front" label="Front Cover" sublabel="Main album artwork" icon="↑"
             dataUrl={images.front} onUpload={url => onImageUpload('front', url)} />
@@ -62,23 +71,22 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
           <UploadZone id="back" label="Back Cover" sublabel="Auto-generated if skipped" icon="↑"
             dataUrl={images.back} onUpload={url => onImageUpload('back', url)} />
 
-          {/* Inner sleeves — always shown, auto-opens gatefold when present */}
+          {/* Inner sleeves */}
           <div className={styles.inner_sleeve_header}>
             <span className={styles.inner_sleeve_label}>Inner Sleeves</span>
             {hasInnerArt
               ? <span className={styles.badge_gatefold}>Gatefold open ✓</span>
-              : <span className={styles.badge_optional}>optional — adds gatefold</span>}
+              : <span className={styles.badge_optional}>optional — opens gatefold</span>}
           </div>
-
           <div className={styles.inner_sleeve_row}>
             <div className={styles.inner_sleeve_half}>
               <div className={styles.inner_side_label}>Left panel</div>
-              <UploadZone id="innerLeft" label="Inner Left" sublabel="Upload to open gatefold" icon="↑"
+              <UploadZone id="innerLeft" label="Inner Left" sublabel="Opens gatefold" icon="↑"
                 dataUrl={images.innerLeft} onUpload={url => onImageUpload('innerLeft', url)} />
             </div>
             <div className={styles.inner_sleeve_half}>
               <div className={styles.inner_side_label}>Right panel</div>
-              <UploadZone id="innerRight" label="Inner Right" sublabel="Upload to open gatefold" icon="↑"
+              <UploadZone id="innerRight" label="Inner Right" sublabel="Opens gatefold" icon="↑"
                 dataUrl={images.innerRight} onUpload={url => onImageUpload('innerRight', url)} />
             </div>
           </div>
@@ -117,7 +125,7 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
               }}
               style={{ flex: 1 }} />
           </div>
-          <p className={styles.hint_text}>Clear vinyl renders with partial transparency.</p>
+          <p className={styles.hint_text}>Coloured and clear vinyl render with partial transparency.</p>
         </section>
 
         {/* ── Album Info ── */}
