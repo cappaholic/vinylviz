@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { solidTexture, generateBackCoverTexture, generateVinylTextureAsync } from './textures.js'
+import { solidTexture, generateBackCoverTexture, generateVinylTextureAsync, generateLabelTextureAsync } from './textures.js'
 
 /**
  * Real-world scale reference (Three.js units = inches for clarity):
@@ -75,10 +75,7 @@ export async function buildAlbumScene(scene, images, meta) {
     makeTex(images.front, '#1c1c1c'),
     makeTex(images.innerLeft,  '#1a1a1a'),
     makeTex(images.innerRight, '#1a1a1a'),
-    generateVinylTextureAsync({
-      artist: meta.artist, albumTitle: meta.albumTitle,
-      labelDataUrl: images.label || null, vinylColor, isClear,
-    }),
+    generateVinylTextureAsync({ vinylColor, isClear }),
   ])
 
   const backTex = images.back
@@ -150,13 +147,10 @@ export async function buildAlbumScene(scene, images, meta) {
   const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
   const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
   const useTransp = isClear || !isBlack
-  // Opacity: clear = very see-through, coloured = slightly see-through (like ref photo)
-  const opacity = isClear ? 0.40 : isBlack ? 1.0 : 0.72
+  // Subtle transparency — just enough to read as coloured vinyl, not washed out
+  const opacity = isClear ? 0.45 : isBlack ? 1.0 : 0.82
   const transpOpts = useTransp ? { transparent: true, depthWrite: false, opacity } : {}
 
-  // The vinyl texture already has the colour baked in (generated with vinylColor).
-  // Do NOT set a color override — it would multiply-darken the texture.
-  // For the face materials just use the texture as-is with transparency.
   const topMat = new THREE.MeshStandardMaterial({
     map: vinylTex, roughness: 0.08, metalness: 0.92,
     ...transpOpts,
@@ -170,6 +164,7 @@ export async function buildAlbumScene(scene, images, meta) {
     ...transpOpts,
   })
 
+  // Main disc (transparent/coloured)
   const vinylDisc = new THREE.Mesh(
     new THREE.CylinderGeometry(VR, VR, VT, 128, 1, false),
     [edgeMatV, topMat, botMat]
@@ -178,16 +173,39 @@ export async function buildAlbumScene(scene, images, meta) {
   vinylDisc.castShadow = true
   vinylDisc.receiveShadow = true
 
-  // Spindle hole — invisible cylinder that visually punches through
-  // by rendering as fully transparent (reveals white void behind)
+  // ── Label — separate SOLID disc sitting just above the main disc ──────────
+  // This ensures the label is always 100% opaque regardless of vinyl colour.
+  const LR = VR * 0.285  // label radius proportional to real vinyl
+  const labelTex = await generateLabelTextureAsync({
+    artist: meta.artist, albumTitle: meta.albumTitle,
+    labelDataUrl: images.label || null,
+  })
+  const labelMat = new THREE.MeshStandardMaterial({
+    map: labelTex, roughness: 0.55, metalness: 0.1,
+  })
+  // Top label disc
+  const labelTop = new THREE.Mesh(
+    new THREE.CylinderGeometry(LR, LR, VT * 0.5, 64, 1, false),
+    labelMat
+  )
+  labelTop.position.y = VT * 0.7   // sit just above the disc surface
+  // Bottom label disc
+  const labelBot = new THREE.Mesh(
+    new THREE.CylinderGeometry(LR, LR, VT * 0.5, 64, 1, false),
+    labelMat
+  )
+  labelBot.position.y = -VT * 0.7
+
+  // ── Spindle hole ──────────────────────────────────────────────────────────
   const holeMat = new THREE.MeshStandardMaterial({
     color: 0xffffff, transparent: true, opacity: 0, depthWrite: false,
   })
   const holeCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT + 0.004, 32, 1, false),
+    new THREE.CylinderGeometry(HR, HR, VT + 0.01, 32, 1, false),
     holeMat
   )
 
+  // ── Bevel rings ───────────────────────────────────────────────────────────
   const bevelGeo = new THREE.TorusGeometry(VR - 0.001, VT * 0.35, 8, 128)
   const bTop = new THREE.Mesh(bevelGeo, edgeMatV)
   bTop.rotation.x =  Math.PI / 2; bTop.position.y =  VT / 2
@@ -196,9 +214,8 @@ export async function buildAlbumScene(scene, images, meta) {
 
   const recordGroup = new THREE.Group()
   recordGroup.name  = 'recordGroup'
-  recordGroup.add(vinylDisc, holeCap, bTop, bBot)
+  recordGroup.add(vinylDisc, labelTop, labelBot, holeCap, bTop, bBot)
 
-  // Record forward and slightly lower — close to cover but not overlapping
   const sleeveBottom = -SZ / 2
   recordGroup.position.set(0, sleeveBottom - VR * 0.3, VR * 1.45)
   group.add(recordGroup)

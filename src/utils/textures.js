@@ -166,48 +166,12 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   ctx.beginPath(); ctx.arc(cx, cy, GS - 6, 0, Math.PI * 2); ctx.stroke()
   ctx.beginPath(); ctx.arc(cx, cy, GE + 6, 0, Math.PI * 2); ctx.stroke()
 
-  // ── Label area ────────────────────────────────────────────────────────────
+  // ── Label area — just a dark circle placeholder (label rendered separately) ─
   const LR = R_MAX * 0.285
   ctx.fillStyle = '#111111'
   ctx.beginPath()
   ctx.arc(cx, cy, LR, 0, Math.PI * 2)
   ctx.fill()
-
-  if (img) {
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(cx, cy, LR - 2, 0, Math.PI * 2)
-    ctx.clip()
-    // Centre-crop the label image into the circular area
-    const iw = img.width, ih = img.height
-    const minDim = Math.min(iw, ih)
-    const sx = (iw - minDim) / 2
-    const sy = (ih - minDim) / 2
-    ctx.drawImage(img, sx, sy, minDim, minDim, cx - LR, cy - LR, LR * 2, LR * 2)
-    ctx.restore()
-  } else {
-    // Styled default label
-    const lg = ctx.createRadialGradient(cx - 24, cy - 24, 0, cx, cy, LR)
-    lg.addColorStop(0,   '#2a1f0a')
-    lg.addColorStop(0.6, '#1a1205')
-    lg.addColorStop(1,   '#0e0a03')
-    ctx.fillStyle = lg
-    ctx.beginPath(); ctx.arc(cx, cy, LR - 2, 0, Math.PI * 2); ctx.fill()
-    ctx.strokeStyle = 'rgba(200,169,110,0.35)'
-    ctx.lineWidth   = 2
-    ctx.beginPath(); ctx.arc(cx, cy, LR - 10, 0, Math.PI * 2); ctx.stroke()
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    if (artist) {
-      ctx.fillStyle = '#c8a96e'
-      ctx.font      = `bold 26px Georgia, serif`
-      ctx.fillText(clip(ctx, artist, LR * 1.7), cx, cy - 14)
-    }
-    if (albumTitle) {
-      ctx.fillStyle = '#7a7570'
-      ctx.font      = `300 17px monospace`
-      ctx.fillText(clip(ctx, albumTitle, LR * 1.7), cx, cy + 14)
-    }
-  }
 
   // ── Centre spindle hole marker ────────────────────────────────────────────
   const holeR = R_MAX * 0.03
@@ -217,24 +181,85 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   return canvas
 }
 
-export async function generateVinylTextureAsync({ artist, albumTitle, labelDataUrl, vinylColor, isClear }) {
-  const opts = { artist, albumTitle, vinylColor: vinylColor || '#080808', isClear: !!isClear }
+/**
+ * Generates a solid label texture (always 100% opaque).
+ * Used on a separate mesh above the transparent vinyl disc.
+ */
+function drawLabelCanvas(img, { artist, albumTitle }) {
+  const SIZE = 512
+  const cx = SIZE / 2, cy = SIZE / 2, R = SIZE / 2 - 2
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = SIZE
+  const ctx = canvas.getContext('2d')
 
+  if (img) {
+    // Draw user label image, centre-cropped into a circle
+    ctx.save()
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip()
+    const iw = img.width, ih = img.height
+    const minDim = Math.min(iw, ih)
+    const sx = (iw - minDim) / 2, sy = (ih - minDim) / 2
+    ctx.drawImage(img, sx, sy, minDim, minDim, cx - R, cy - R, R * 2, R * 2)
+    ctx.restore()
+  } else {
+    // Styled default label
+    const lg = ctx.createRadialGradient(cx - 24, cy - 24, 0, cx, cy, R)
+    lg.addColorStop(0,   '#2a1f0a')
+    lg.addColorStop(0.6, '#1a1205')
+    lg.addColorStop(1,   '#0e0a03')
+    ctx.fillStyle = lg
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill()
+
+    ctx.strokeStyle = 'rgba(200,169,110,0.4)'
+    ctx.lineWidth = 2
+    ctx.beginPath(); ctx.arc(cx, cy, R - 12, 0, Math.PI * 2); ctx.stroke()
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    if (artist) {
+      ctx.fillStyle = '#c8a96e'
+      ctx.font = `bold 52px Georgia, serif`
+      ctx.fillText(clip(ctx, artist, R * 1.7), cx, cy - 24)
+    }
+    if (albumTitle) {
+      ctx.fillStyle = '#7a7570'
+      ctx.font = `300 32px monospace`
+      ctx.fillText(clip(ctx, albumTitle, R * 1.7), cx, cy + 28)
+    }
+  }
+
+  // Spindle hole
+  ctx.fillStyle = '#000'
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.055, 0, Math.PI * 2); ctx.fill()
+
+  return canvas
+}
+
+export async function generateLabelTextureAsync({ artist, albumTitle, labelDataUrl }) {
+  const opts = { artist, albumTitle }
   const finish = (canvas) => {
     const tex = new THREE.CanvasTexture(canvas)
     tex.colorSpace = THREE.SRGBColorSpace
-    tex.flipY = false  // CylinderGeometry top face UV doesn't need flipY
+    tex.flipY = false
     return tex
   }
-
-  if (!labelDataUrl) return finish(drawVinylCanvas(null, opts))
-
+  if (!labelDataUrl) return finish(drawLabelCanvas(null, opts))
   return new Promise((resolve) => {
     const img = new Image()
-    img.onload  = () => resolve(finish(drawVinylCanvas(img, opts)))
-    img.onerror = () => resolve(finish(drawVinylCanvas(null, opts)))
+    img.onload  = () => resolve(finish(drawLabelCanvas(img, opts)))
+    img.onerror = () => resolve(finish(drawLabelCanvas(null, opts)))
     img.src = labelDataUrl
   })
+}
+
+export async function generateVinylTextureAsync({ vinylColor, isClear }) {
+  const opts = { artist: '', albumTitle: '', vinylColor: vinylColor || '#080808', isClear: !!isClear }
+  const finish = (canvas) => {
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.flipY = false
+    return tex
+  }
+  return finish(drawVinylCanvas(null, opts))
 }
 
 function clip(ctx, text, maxWidth) {
