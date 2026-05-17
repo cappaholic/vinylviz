@@ -171,43 +171,26 @@ export async function buildAlbumScene(scene, images, meta) {
     ...transpOpts,
   })
 
-  // Use a ring geometry (CylinderGeometry with openEnded faces + two rings for caps)
-  // to create the spindle hole.
-  // Outer radius = VR, inner radius = HR, thickness = VT
-  // Three.js CylinderGeometry doesn't natively support inner radius,
-  // so we use a LatheGeometry or combine shapes.
-  // Simplest: use a solid cylinder and subtract with a boolean — not available in r128.
-  // Instead: use a custom ring BufferGeometry for the flat faces + open cylinder for edge.
-
-  // Top / bottom ring faces
-  const makeRingGeo = () => {
-    const geo   = new THREE.RingGeometry(HR, VR, 128, 1)
-    // RingGeometry lies in XZ, need to map UV nicely — it's already UV mapped
-    return geo
-  }
-
-  const ringTop = new THREE.Mesh(makeRingGeo(), topMat)
-  ringTop.rotation.x = -Math.PI / 2
-  ringTop.position.y =  VT / 2
-
-  const ringBot = new THREE.Mesh(makeRingGeo(), botMat)
-  ringBot.rotation.x =  Math.PI / 2  // flip so face points down
-  ringBot.position.y = -VT / 2
-
-  // Outer edge cylinder (open ended)
-  const outerEdge = new THREE.Mesh(
-    new THREE.CylinderGeometry(VR, VR, VT, 128, 1, true),
-    edgeMatV
+  // Solid disc with texture on both faces (top + bottom)
+  // CylinderGeometry material order: [side, top(+Y), bottom(-Y)]
+  const vinylDisc = new THREE.Mesh(
+    new THREE.CylinderGeometry(VR, VR, VT, 128, 1, false),
+    [edgeMatV, topMat, botMat]
   )
+  vinylDisc.name = 'vinylDisc'
+  vinylDisc.castShadow = true
+  vinylDisc.receiveShadow = true
 
-  // Inner hole edge (open ended, inner surface)
-  const innerEdge = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT, 64, 1, true),
-    edgeMatV
+  // Spindle hole: small dark cylinder in the center, sitting just above the disc
+  const holeMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 })
+  const holeCap = new THREE.Mesh(
+    new THREE.CylinderGeometry(HR, HR, VT + 0.002, 32, 1, false),
+    holeMat
   )
+  holeCap.position.y = 0
 
-  // Bevel rings (flat torus at top/bottom outer edge — no seam)
-  const bevelGeo = new THREE.TorusGeometry(VR - 0.001, VT * 0.3, 8, 128)
+  // Bevel rings — lie flat at top and bottom outer edge
+  const bevelGeo = new THREE.TorusGeometry(VR - 0.001, VT * 0.35, 8, 128)
   const bTop = new THREE.Mesh(bevelGeo, edgeMatV)
   bTop.rotation.x =  Math.PI / 2; bTop.position.y =  VT / 2
   const bBot = new THREE.Mesh(bevelGeo, edgeMatV)
@@ -215,10 +198,8 @@ export async function buildAlbumScene(scene, images, meta) {
 
   const recordGroup = new THREE.Group()
   recordGroup.name  = 'recordGroup'
-  recordGroup.add(ringTop, ringBot, outerEdge, innerEdge, bTop, bBot)
+  recordGroup.add(vinylDisc, holeCap, bTop, bBot)
 
-  // Position: sleeve sits upright at y=0 center, its bottom is at -SZ/2.
-  // Record sits flat on a "table" below and in front — well clear of the sleeve.
   const sleeveBottom = -SZ / 2
   recordGroup.position.set(0, sleeveBottom - VR * 0.55, VR * 1.1)
   group.add(recordGroup)
@@ -237,7 +218,7 @@ export async function buildAlbumScene(scene, images, meta) {
   group.rotation.x = -0.18
   group.rotation.y =  0.22
 
-  return { group, recordGroup, vinylDisc: ringTop }
+  return { group, recordGroup, vinylDisc }
 }
 
 export function setupLights(scene) {
