@@ -64,7 +64,8 @@
 
 /* Viewport always takes the full layout — sidebar overlays it */
 .viewport_wrap {
-  flex: 1;
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  position: relative;
 }

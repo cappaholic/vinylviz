@@ -1,5 +1,5 @@
 .viewport {
-  flex: 1; position: relative; background: #ffffff; overflow: hidden; min-width: 0;
+  position: absolute; inset: 0; background: #ffffff; overflow: hidden;
 }
 
 .canvas {
