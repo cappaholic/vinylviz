@@ -175,9 +175,7 @@ export async function buildAlbumScene(scene, images, meta) {
   vinylDisc.castShadow = true
   vinylDisc.receiveShadow = true
 
-  // ── Label — paper-thin disc flush with the vinyl surface ──────────────────
-  // Essentially zero thickness (0.0001) so it appears as a flat sticker.
-  // Positioned exactly at the top and bottom face of the vinyl disc.
+  // ── Label — flat circle, slightly inset from disc face ───────────────────
   const LR = VR * 0.285
   const labelTex = await generateLabelTextureAsync({
     artist: meta.artist, albumTitle: meta.albumTitle,
@@ -187,23 +185,23 @@ export async function buildAlbumScene(scene, images, meta) {
     map: labelTex, roughness: 0.55, metalness: 0.05,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
   })
-  // Use flat PlaneGeometry circles instead of cylinders — truly zero thickness
   const labelGeo = new THREE.CircleGeometry(LR, 64)
   const labelTop = new THREE.Mesh(labelGeo, labelMat)
-  labelTop.rotation.x = -Math.PI / 2   // face upward
+  labelTop.rotation.x = -Math.PI / 2
   labelTop.position.y =  VT / 2 + 0.0001
   const labelBot = new THREE.Mesh(labelGeo, labelMat)
-  labelBot.rotation.x =  Math.PI / 2   // face downward
+  labelBot.rotation.x =  Math.PI / 2
   labelBot.position.y = -VT / 2 - 0.0001
 
-  // ── Spindle hole ──────────────────────────────────────────────────────────
-  const holeMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff, transparent: true, opacity: 0, depthWrite: false,
-  })
+  // ── Spindle hole — solid white cylinder punching through everything ────────
+  // MeshBasicMaterial ignores lighting — always renders as pure white (void colour)
+  // renderOrder ensures it draws on top of label and disc
+  const holeMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
   const holeCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT + 0.01, 32, 1, false),
+    new THREE.CylinderGeometry(HR, HR, VT + 0.008, 48, 1, false),
     holeMat
   )
+  holeCap.renderOrder = 1
 
   const recordGroup = new THREE.Group()
   recordGroup.name  = 'recordGroup'

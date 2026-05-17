@@ -238,9 +238,7 @@ function drawLabelCanvas(img, { artist, albumTitle }) {
     }
   }
 
-  // Spindle hole
-  ctx.fillStyle = '#000'
-  ctx.beginPath(); ctx.arc(cx, cy, R * 0.055, 0, Math.PI * 2); ctx.fill()
+  // No spindle hole drawn here — handled by solid white cylinder in 3D scene
 
   return canvas
 }
@@ -250,6 +248,8 @@ export async function generateLabelTextureAsync({ artist, albumTitle, labelDataU
   const finish = (canvas) => {
     const tex = new THREE.CanvasTexture(canvas)
     tex.colorSpace = THREE.SRGBColorSpace
+    // RingGeometry maps UV from inner to outer edge radially
+    // flipY false works correctly here
     tex.flipY = false
     return tex
   }
