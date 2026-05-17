@@ -79,7 +79,7 @@
 }
 
 /* ── Vinyl chips ── */
-.vinyl_presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; }
+.vinyl_presets { display: flex; flex-wrap: wrap; gap: 8px 10px; margin-bottom: 8px; padding-bottom: 20px; }
 .vinyl_chip {
   width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border2);
   cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -88,11 +88,11 @@
 .vinyl_chip:hover { transform: scale(1.1); }
 .chip_active { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(200,169,110,0.25); }
 .chip_label {
-  position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
-  font-size: 9px; color: var(--text3); white-space: nowrap; pointer-events: none;
+  position: absolute; bottom: -17px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: var(--text3); white-space: nowrap; pointer-events: none; line-height: 1;
 }
 .chip_icon { font-size: 16px; color: var(--text2); line-height: 1; }
-.custom_color_row { display: flex; align-items: center; gap: 8px; margin-top: 22px; }
+.custom_color_row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .color_picker {
   width: 36px; height: 36px; border: 1px solid var(--border2); border-radius: var(--radius);
   padding: 2px; background: var(--surface2); cursor: pointer; flex-shrink: 0;

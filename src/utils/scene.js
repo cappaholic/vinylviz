@@ -148,9 +148,9 @@ export async function buildAlbumScene(scene, images, meta) {
   // ─── Vinyl record ─────────────────────────────────────────────────────────
   const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
   const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
-  const useTransp = isClear || !isBlack
-  // 95% opacity for coloured vinyl — barely translucent, just slightly see-through
-  const opacity = isClear ? 0.52 : isBlack ? 1.0 : 0.95
+  const isWhite = vinylColor === '#e8e8e8' || vinylColor === '#ffffff' || vinylColor === '#fff'
+  const useTransp = isClear || (!isBlack && !isWhite)
+  const opacity = isClear ? 0.52 : 1.0  // everything non-clear is fully opaque
   const transpOpts = useTransp ? { transparent: true, depthWrite: true, opacity } : {}
 
   const topMat = new THREE.MeshStandardMaterial({
@@ -193,13 +193,14 @@ export async function buildAlbumScene(scene, images, meta) {
   labelBot.rotation.x =  Math.PI / 2
   labelBot.position.y = -VT / 2 - 0.0001
 
-  // ── Spindle hole — solid white cylinder punching through everything ────────
-  // MeshBasicMaterial ignores lighting — always renders as pure white (void colour)
-  // renderOrder ensures it draws on top of label and disc
-  const holeMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+  // ── Spindle hole — exact vinyl thickness, vinyl-coloured edge ────────────
+  // Top and bottom caps are white (void colour), side edge matches vinyl colour
+  const holeTopMat  = new THREE.MeshBasicMaterial({ color: 0xffffff })
+  const holeEdgeMat = new THREE.MeshBasicMaterial({ color: vColor })
+  // CylinderGeometry material order: [side, top(+Y), bottom(-Y)]
   const holeCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT + 0.008, 48, 1, false),
-    holeMat
+    new THREE.CylinderGeometry(HR, HR, VT, 48, 1, false),
+    [holeEdgeMat, holeTopMat, holeTopMat]
   )
   holeCap.renderOrder = 1
 
