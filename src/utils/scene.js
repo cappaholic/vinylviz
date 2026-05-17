@@ -147,9 +147,9 @@ export async function buildAlbumScene(scene, images, meta) {
   const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
   const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
   const useTransp = isClear || !isBlack
-  // Subtle transparency — just enough to read as coloured vinyl, not washed out
-  const opacity = isClear ? 0.45 : isBlack ? 1.0 : 0.82
-  const transpOpts = useTransp ? { transparent: true, depthWrite: false, opacity } : {}
+  // Subtle transparency — coloured vinyl reads as slightly see-through, not washed out
+  const opacity = isClear ? 0.50 : isBlack ? 1.0 : 0.90
+  const transpOpts = useTransp ? { transparent: true, depthWrite: true, opacity } : {}
 
   const topMat = new THREE.MeshStandardMaterial({
     map: vinylTex, roughness: 0.08, metalness: 0.92,
@@ -173,28 +173,26 @@ export async function buildAlbumScene(scene, images, meta) {
   vinylDisc.castShadow = true
   vinylDisc.receiveShadow = true
 
-  // ── Label — separate SOLID disc sitting just above the main disc ──────────
-  // This ensures the label is always 100% opaque regardless of vinyl colour.
-  const LR = VR * 0.285  // label radius proportional to real vinyl
+  // ── Label — paper-thin disc flush with the vinyl surface ──────────────────
+  // Essentially zero thickness (0.0001) so it appears as a flat sticker.
+  // Positioned exactly at the top and bottom face of the vinyl disc.
+  const LR = VR * 0.285
   const labelTex = await generateLabelTextureAsync({
     artist: meta.artist, albumTitle: meta.albumTitle,
     labelDataUrl: images.label || null,
   })
   const labelMat = new THREE.MeshStandardMaterial({
-    map: labelTex, roughness: 0.55, metalness: 0.1,
+    map: labelTex, roughness: 0.55, metalness: 0.05,
+    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
   })
-  // Top label disc
-  const labelTop = new THREE.Mesh(
-    new THREE.CylinderGeometry(LR, LR, VT * 0.5, 64, 1, false),
-    labelMat
-  )
-  labelTop.position.y = VT * 0.7   // sit just above the disc surface
-  // Bottom label disc
-  const labelBot = new THREE.Mesh(
-    new THREE.CylinderGeometry(LR, LR, VT * 0.5, 64, 1, false),
-    labelMat
-  )
-  labelBot.position.y = -VT * 0.7
+  // Use flat PlaneGeometry circles instead of cylinders — truly zero thickness
+  const labelGeo = new THREE.CircleGeometry(LR, 64)
+  const labelTop = new THREE.Mesh(labelGeo, labelMat)
+  labelTop.rotation.x = -Math.PI / 2   // face upward
+  labelTop.position.y =  VT / 2 + 0.0001
+  const labelBot = new THREE.Mesh(labelGeo, labelMat)
+  labelBot.rotation.x =  Math.PI / 2   // face downward
+  labelBot.position.y = -VT / 2 - 0.0001
 
   // ── Spindle hole ──────────────────────────────────────────────────────────
   const holeMat = new THREE.MeshStandardMaterial({
@@ -233,7 +231,7 @@ export async function buildAlbumScene(scene, images, meta) {
   group.rotation.x = -0.14
   group.rotation.y =  0.22
 
-  return { group, recordGroup, vinylDisc }
+  return { group, recordGroup, vinylDisc: recordGroup }
 }
 
 export function setupLights(scene) {
