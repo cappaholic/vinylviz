@@ -133,14 +133,16 @@ export async function buildAlbumScene(scene, images, meta) {
     sleeve.receiveShadow = true
     group.add(sleeve)
 
-    // Inner sleeve peek
-    const inner = new THREE.Mesh(
-      new THREE.BoxGeometry(SZ * 0.92, SZ * 0.92, ST * 0.5),
-      [edgeMat(), edgeMat(), edgeMat(), edgeMat(), surfMat(innerLeftTex), surfMat(innerLeftTex)]
-    )
-    inner.position.set(0, 0.1, ST * 0.6)
-    inner.castShadow = true
-    group.add(inner)
+    // Inner sleeve peek — only rendered if user has uploaded inner art
+    if (images.innerLeft) {
+      const inner = new THREE.Mesh(
+        new THREE.BoxGeometry(SZ * 0.92, SZ * 0.92, ST * 0.5),
+        [edgeMat(), edgeMat(), edgeMat(), edgeMat(), surfMat(innerLeftTex), surfMat(innerLeftTex)]
+      )
+      inner.position.set(0, 0.1, ST * 0.6)
+      inner.castShadow = true
+      group.add(inner)
+    }
   }
 
   // ─── Vinyl record ─────────────────────────────────────────────────────────
