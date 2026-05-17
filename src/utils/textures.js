@@ -111,6 +111,9 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   }
   const [br, bg, bb] = isClear ? [153, 187, 204] : hexToRgb(baseHex)
 
+  // Detect light-coloured vinyl (used for fill colour and groove contrast)
+  const isLight = (br + bg + bb) > 400
+
   // Lighten: add white
   const lighten = (amount) =>
     `rgb(${Math.round(Math.min(255, br + amount))},${Math.round(Math.min(255, bg + amount))},${Math.round(Math.min(255, bb + amount))})`
@@ -119,22 +122,20 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
     `rgb(${Math.round(Math.max(0, br - amount))},${Math.round(Math.max(0, bg - amount))},${Math.round(Math.max(0, bb - amount))})`
 
   // ── Base disc fill ────────────────────────────────────────────────────────
-  ctx.fillStyle = baseHex
+  // For light vinyl use pure white so it renders correctly; dark vinyl uses baseHex
+  const fillColor = isClear ? 'rgba(180,210,230,0.2)' : (isLight ? '#ffffff' : baseHex)
+  ctx.fillStyle = fillColor
   ctx.beginPath()
   ctx.arc(cx, cy, SIZE / 2 - 1, 0, Math.PI * 2)
   ctx.fill()
 
   // ── Groove track lines ────────────────────────────────────────────────────
-  // Reference photo shows: wide bands of smooth vinyl separated by clearly
-  // visible dark groove lines. About 20-30 visible track groups, not 120 thin rings.
   const R_MAX   = SIZE / 2 - 2
   const GS      = R_MAX * 0.30
   const GE      = R_MAX * 0.94
-  // Fewer grooves, more visible — simulates the track-group separators
   const GROOVES = 160
 
   // Detect light-coloured vinyl — grooves need to go darker not lighter
-  const isLight = (br + bg + bb) > 400
 
   for (let i = 0; i < GROOVES; i++) {
     const t = i / GROOVES

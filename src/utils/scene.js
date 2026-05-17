@@ -149,24 +149,29 @@ export async function buildAlbumScene(scene, images, meta) {
   const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
   const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
   const isWhite = vinylColor === '#e8e8e8' || vinylColor === '#ffffff' || vinylColor === '#fff'
-  const useTransp = isClear || (!isBlack && !isWhite)
-  const opacity = isClear ? 0.52 : 1.0  // everything non-clear is fully opaque
-  const transpOpts = useTransp ? { transparent: true, depthWrite: true, opacity } : {}
+  const useTransp = isClear
+  const transpOpts = useTransp ? { transparent: true, depthWrite: true, opacity: 0.52 } : {}
+
+  // White vinyl: low metalness, high roughness — matte cream look
+  // Dark vinyl: high metalness — shiny black look
+  const faceRoughness = isWhite ? 0.85 : 0.08
+  const faceMetalness = isWhite ? 0.02 : 0.92
 
   const topMat = new THREE.MeshStandardMaterial({
-    map: vinylTex, roughness: 0.08, metalness: 0.92,
+    map: vinylTex, roughness: faceRoughness, metalness: faceMetalness,
     ...transpOpts,
   })
   const botMat = new THREE.MeshStandardMaterial({
-    map: vinylTex, roughness: 0.08, metalness: 0.92,
+    map: vinylTex, roughness: faceRoughness, metalness: faceMetalness,
     ...transpOpts,
   })
   const edgeMatV = new THREE.MeshStandardMaterial({
-    color: vColor, roughness: 0.18, metalness: 0.75,
+    color: vColor,
+    roughness: isWhite ? 0.80 : 0.18,
+    metalness: isWhite ? 0.02 : 0.75,
     ...transpOpts,
   })
 
-  // Single clean disc — no bevel torus rings (they caused the double-edge look)
   const vinylDisc = new THREE.Mesh(
     new THREE.CylinderGeometry(VR, VR, VT, 192, 1, false),
     [edgeMatV, topMat, botMat]
@@ -175,7 +180,7 @@ export async function buildAlbumScene(scene, images, meta) {
   vinylDisc.castShadow = true
   vinylDisc.receiveShadow = true
 
-  // ── Label — flat circle, slightly inset from disc face ───────────────────
+  // ── Label ─────────────────────────────────────────────────────────────────
   const LR = VR * 0.285
   const labelTex = await generateLabelTextureAsync({
     artist: meta.artist, albumTitle: meta.albumTitle,
@@ -188,25 +193,39 @@ export async function buildAlbumScene(scene, images, meta) {
   const labelGeo = new THREE.CircleGeometry(LR, 64)
   const labelTop = new THREE.Mesh(labelGeo, labelMat)
   labelTop.rotation.x = -Math.PI / 2
-  labelTop.position.y =  VT / 2 + 0.0001
-  labelTop.renderOrder = 1
+  labelTop.position.y =  VT / 2 + 0.0002
   const labelBot = new THREE.Mesh(labelGeo, labelMat)
   labelBot.rotation.x =  Math.PI / 2
-  labelBot.position.y = -VT / 2 - 0.0001
-  labelBot.renderOrder = 1
+  labelBot.position.y = -VT / 2 - 0.0002
 
-  // ── Spindle hole — tall enough to punch through disc AND both label stickers
-  const holeTopMat  = new THREE.MeshBasicMaterial({ color: 0xffffff })
+  // ── Spindle hole ──────────────────────────────────────────────────────────
+  // The hole edge matches the vinyl colour.
+  // The caps use depthTest:false + renderOrder so they ALWAYS draw white
+  // regardless of camera angle — this prevents the hole from disappearing.
   const holeEdgeMat = new THREE.MeshBasicMaterial({ color: vColor })
-  const holeCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT + 0.004, 48, 1, false),
-    [holeEdgeMat, holeTopMat, holeTopMat]
+  const holeCapMat  = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    depthTest: false,   // always visible regardless of depth
+  })
+  // Edge cylinder — exact vinyl thickness, vinyl colour side
+  const holeEdge = new THREE.Mesh(
+    new THREE.CylinderGeometry(HR, HR, VT, 48, 1, true),  // open-ended
+    holeEdgeMat
   )
-  holeCap.renderOrder = 2  // above label (renderOrder 1) and disc
+  // Top cap disc — white, always on top
+  const holeCapGeo = new THREE.CircleGeometry(HR, 48)
+  const holeCapTop = new THREE.Mesh(holeCapGeo, holeCapMat)
+  holeCapTop.rotation.x = -Math.PI / 2
+  holeCapTop.position.y =  VT / 2 + 0.001
+  holeCapTop.renderOrder = 999
+  const holeCapBot = new THREE.Mesh(holeCapGeo, holeCapMat)
+  holeCapBot.rotation.x =  Math.PI / 2
+  holeCapBot.position.y = -VT / 2 - 0.001
+  holeCapBot.renderOrder = 999
 
   const recordGroup = new THREE.Group()
   recordGroup.name  = 'recordGroup'
-  recordGroup.add(vinylDisc, labelTop, labelBot, holeCap)
+  recordGroup.add(vinylDisc, labelTop, labelBot, holeEdge, holeCapTop, holeCapBot)
 
   const sleeveBottom = -SZ / 2
   recordGroup.position.set(0, sleeveBottom - VR * 0.3, VR * 1.45)
