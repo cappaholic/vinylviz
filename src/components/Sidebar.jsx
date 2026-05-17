@@ -81,12 +81,12 @@ export default function Sidebar({ images, meta, tracks, onImageUpload, onMetaCha
           <div className={styles.inner_sleeve_row}>
             <div className={styles.inner_sleeve_half}>
               <div className={styles.inner_side_label}>Left panel</div>
-              <UploadZone id="innerLeft" label="Inner Left" sublabel="Opens gatefold" icon="↑"
+              <UploadZone id="innerLeft" label="Inner Left Cover" sublabel="Opens gatefold" icon="↑"
                 dataUrl={images.innerLeft} onUpload={url => onImageUpload('innerLeft', url)} />
             </div>
             <div className={styles.inner_sleeve_half}>
               <div className={styles.inner_side_label}>Right panel</div>
-              <UploadZone id="innerRight" label="Inner Right" sublabel="Opens gatefold" icon="↑"
+              <UploadZone id="innerRight" label="Inner Right Cover" sublabel="Opens gatefold" icon="↑"
                 dataUrl={images.innerRight} onUpload={url => onImageUpload('innerRight', url)} />
             </div>
           </div>

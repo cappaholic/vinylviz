@@ -92,30 +92,32 @@ export async function buildAlbumScene(scene, images, meta) {
 
   // ─── Sleeve / Gatefold ───────────────────────────────────────────────────
   if (isGatefold) {
-    const halfW     = SZ / 2
-    const panelGeo  = new THREE.BoxGeometry(halfW, SZ, ST)
-    const openAngle = THREE.MathUtils.degToRad(42)
+    // Each panel is a FULL 12.375" × 12.375" square — two complete covers opening like a book.
+    const panelGeo  = new THREE.BoxGeometry(SZ, SZ, ST)
+    const openAngle = THREE.MathUtils.degToRad(38)
 
+    // Left panel — pivots from its RIGHT edge (spine hinge at x=0)
     const leftPivot = new THREE.Group()
     const leftMesh  = new THREE.Mesh(panelGeo, [
       edgeMat(), edgeMat(), edgeMat(), edgeMat(),
-      surfMat(innerLeftTex),
-      surfMat(backTex),
+      surfMat(innerLeftTex),  // +Z = inside face
+      surfMat(backTex),       // -Z = outside / back cover
     ])
-    leftMesh.position.x = -halfW / 2
+    leftMesh.position.x = -SZ / 2   // shift so right edge sits at pivot origin
     leftMesh.castShadow = true
     leftMesh.receiveShadow = true
     leftPivot.add(leftMesh)
     leftPivot.rotation.y = openAngle
     group.add(leftPivot)
 
+    // Right panel — pivots from its LEFT edge (spine hinge at x=0)
     const rightPivot = new THREE.Group()
     const rightMesh  = new THREE.Mesh(panelGeo, [
       edgeMat(), edgeMat(), edgeMat(), edgeMat(),
-      surfMat(innerRightTex),
-      surfMat(frontTex),
+      surfMat(innerRightTex), // +Z = inside face
+      surfMat(frontTex),      // -Z = outside / front cover
     ])
-    rightMesh.position.x = halfW / 2
+    rightMesh.position.x = SZ / 2   // shift so left edge sits at pivot origin
     rightMesh.castShadow = true
     rightMesh.receiveShadow = true
     rightPivot.add(rightMesh)
@@ -145,34 +147,27 @@ export async function buildAlbumScene(scene, images, meta) {
   }
 
   // ─── Vinyl record ─────────────────────────────────────────────────────────
-  // Colour & transparency
-  const vColor = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
-
-  // For coloured (non-black, non-clear) vinyl: make it visibly semi-transparent
-  const isBlack    = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
-  const useTransp  = isClear || !isBlack
-  const opacity    = isClear ? 0.38 : isBlack ? 1.0 : 0.55
-
+  const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
+  const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
+  const useTransp = isClear || !isBlack
+  const opacity   = isClear ? 0.38 : isBlack ? 1.0 : 0.60
   const transpOpts = useTransp ? { transparent: true, depthWrite: false, opacity } : {}
+  // Colour tint multiplies with the texture — gives the vinyl its hue
+  const colorOverride = useTransp ? { color: isClear ? new THREE.Color(0xbbddee) : vColor } : {}
 
   const topMat = new THREE.MeshStandardMaterial({
     map: vinylTex, roughness: 0.10, metalness: 0.90,
-    ...transpOpts,
-    ...(useTransp ? { color: isClear ? new THREE.Color(0xbbddee) : vColor } : {}),
+    ...transpOpts, ...colorOverride,
   })
   const botMat = new THREE.MeshStandardMaterial({
-    map: vinylTex,   // label on BOTH sides
-    roughness: 0.10, metalness: 0.90,
-    ...transpOpts,
-    ...(useTransp ? { color: isClear ? new THREE.Color(0xbbddee) : vColor } : {}),
+    map: vinylTex, roughness: 0.10, metalness: 0.90,
+    ...transpOpts, ...colorOverride,
   })
   const edgeMatV = new THREE.MeshStandardMaterial({
     color: vColor, roughness: 0.22, metalness: 0.65,
     ...transpOpts,
   })
 
-  // Solid disc with texture on both faces (top + bottom)
-  // CylinderGeometry material order: [side, top(+Y), bottom(-Y)]
   const vinylDisc = new THREE.Mesh(
     new THREE.CylinderGeometry(VR, VR, VT, 128, 1, false),
     [edgeMatV, topMat, botMat]
@@ -181,15 +176,16 @@ export async function buildAlbumScene(scene, images, meta) {
   vinylDisc.castShadow = true
   vinylDisc.receiveShadow = true
 
-  // Spindle hole: small dark cylinder in the center, sitting just above the disc
-  const holeMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 })
+  // Spindle hole — invisible cylinder that visually punches through
+  // by rendering as fully transparent (reveals white void behind)
+  const holeMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff, transparent: true, opacity: 0, depthWrite: false,
+  })
   const holeCap = new THREE.Mesh(
-    new THREE.CylinderGeometry(HR, HR, VT + 0.002, 32, 1, false),
+    new THREE.CylinderGeometry(HR, HR, VT + 0.004, 32, 1, false),
     holeMat
   )
-  holeCap.position.y = 0
 
-  // Bevel rings — lie flat at top and bottom outer edge
   const bevelGeo = new THREE.TorusGeometry(VR - 0.001, VT * 0.35, 8, 128)
   const bTop = new THREE.Mesh(bevelGeo, edgeMatV)
   bTop.rotation.x =  Math.PI / 2; bTop.position.y =  VT / 2
@@ -200,22 +196,22 @@ export async function buildAlbumScene(scene, images, meta) {
   recordGroup.name  = 'recordGroup'
   recordGroup.add(vinylDisc, holeCap, bTop, bBot)
 
+  // Record forward and slightly lower — close to cover but not overlapping
   const sleeveBottom = -SZ / 2
-  recordGroup.position.set(0, sleeveBottom - VR * 0.55, VR * 1.1)
+  recordGroup.position.set(0, sleeveBottom - VR * 0.3, VR * 1.45)
   group.add(recordGroup)
 
   // ─── Shadow plane ─────────────────────────────────────────────────────────
   const shadowPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(24, 24),
-    new THREE.ShadowMaterial({ opacity: 0.06 })
+    new THREE.PlaneGeometry(30, 30),
+    new THREE.ShadowMaterial({ opacity: 0.05 })
   )
   shadowPlane.rotation.x = -Math.PI / 2
-  shadowPlane.position.y  = sleeveBottom - VR * 1.1
+  shadowPlane.position.y  = sleeveBottom - VR * 0.9
   shadowPlane.receiveShadow = true
   group.add(shadowPlane)
 
-  // Starting orientation
-  group.rotation.x = -0.18
+  group.rotation.x = -0.14
   group.rotation.y =  0.22
 
   return { group, recordGroup, vinylDisc }
