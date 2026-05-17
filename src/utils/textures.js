@@ -125,24 +125,34 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   ctx.fill()
 
   // ── Groove track lines ────────────────────────────────────────────────────
+  // Reference photo shows: wide bands of smooth vinyl separated by clearly
+  // visible dark groove lines. About 20-30 visible track groups, not 120 thin rings.
   const R_MAX   = SIZE / 2 - 2
   const GS      = R_MAX * 0.30
   const GE      = R_MAX * 0.94
-  const GROOVES = 120
+  // Fewer grooves, more visible — simulates the track-group separators
+  const GROOVES = 160
 
   for (let i = 0; i < GROOVES; i++) {
     const t = i / GROOVES
     const r = GS + t * (GE - GS)
 
-    if (i % 5 === 0) {
-      ctx.strokeStyle = lighten(46)   // track gap — lighter
-      ctx.lineWidth   = 2.2
+    if (i % 8 === 0) {
+      // Track separator — noticeably darker, wider line
+      ctx.strokeStyle = darken(40)
+      ctx.lineWidth   = 3.5
+    } else if (i % 4 === 0) {
+      // Secondary groove wall — slightly darker
+      ctx.strokeStyle = darken(22)
+      ctx.lineWidth   = 1.8
     } else if (i % 2 === 0) {
-      ctx.strokeStyle = lighten(20)   // groove wall
-      ctx.lineWidth   = 1.2
+      // Groove wall — slightly lighter (reflective face)
+      ctx.strokeStyle = lighten(18)
+      ctx.lineWidth   = 1.0
     } else {
-      ctx.strokeStyle = darken(16)    // groove valley
-      ctx.lineWidth   = 1.2
+      // Groove valley — base colour
+      ctx.strokeStyle = baseHex
+      ctx.lineWidth   = 0.8
     }
     ctx.beginPath()
     ctx.arc(cx, cy, r, 0, Math.PI * 2)
@@ -151,8 +161,8 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
 
   // ── Radial shimmer sheen ──────────────────────────────────────────────────
   const shimmer = ctx.createRadialGradient(cx - 100, cy - 120, 20, cx, cy, R_MAX)
-  shimmer.addColorStop(0,    'rgba(255,255,255,0.10)')
-  shimmer.addColorStop(0.35, 'rgba(255,255,255,0.04)')
+  shimmer.addColorStop(0,    'rgba(255,255,255,0.14)')
+  shimmer.addColorStop(0.3,  'rgba(255,255,255,0.06)')
   shimmer.addColorStop(0.65, 'rgba(255,255,255,0.02)')
   shimmer.addColorStop(1,    'rgba(0,0,0,0)')
   ctx.fillStyle = shimmer
@@ -160,11 +170,12 @@ function drawVinylCanvas(img, { artist, albumTitle, vinylColor, isClear }) {
   ctx.arc(cx, cy, R_MAX, 0, Math.PI * 2)
   ctx.fill()
 
-  // ── Lead-in / run-out silent grooves ─────────────────────────────────────
-  ctx.lineWidth   = 3.5
-  ctx.strokeStyle = lighten(56)
-  ctx.beginPath(); ctx.arc(cx, cy, GS - 6, 0, Math.PI * 2); ctx.stroke()
-  ctx.beginPath(); ctx.arc(cx, cy, GE + 6, 0, Math.PI * 2); ctx.stroke()
+  // ── Lead-in / run-out silent grooves — clearly visible bright rings ───────
+  ctx.lineWidth   = 5
+  ctx.strokeStyle = lighten(70)
+  ctx.beginPath(); ctx.arc(cx, cy, GS - 8, 0, Math.PI * 2); ctx.stroke()
+  ctx.lineWidth   = 4
+  ctx.beginPath(); ctx.arc(cx, cy, GE + 8, 0, Math.PI * 2); ctx.stroke()
 
   // ── Label area — just a dark circle placeholder (label rendered separately) ─
   const LR = R_MAX * 0.285

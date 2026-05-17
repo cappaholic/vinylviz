@@ -147,8 +147,8 @@ export async function buildAlbumScene(scene, images, meta) {
   const vColor  = new THREE.Color(isClear ? 0x99bbcc : vinylColor)
   const isBlack = vinylColor === '#080808' || vinylColor === '#000000' || vinylColor === '#000'
   const useTransp = isClear || !isBlack
-  // Subtle transparency — coloured vinyl reads as slightly see-through, not washed out
-  const opacity = isClear ? 0.50 : isBlack ? 1.0 : 0.90
+  // 95% opacity for coloured vinyl — barely translucent, just slightly see-through
+  const opacity = isClear ? 0.52 : isBlack ? 1.0 : 0.95
   const transpOpts = useTransp ? { transparent: true, depthWrite: true, opacity } : {}
 
   const topMat = new THREE.MeshStandardMaterial({
@@ -160,13 +160,13 @@ export async function buildAlbumScene(scene, images, meta) {
     ...transpOpts,
   })
   const edgeMatV = new THREE.MeshStandardMaterial({
-    color: vColor, roughness: 0.20, metalness: 0.70,
+    color: vColor, roughness: 0.18, metalness: 0.75,
     ...transpOpts,
   })
 
-  // Main disc (transparent/coloured)
+  // Single clean disc — no bevel torus rings (they caused the double-edge look)
   const vinylDisc = new THREE.Mesh(
-    new THREE.CylinderGeometry(VR, VR, VT, 128, 1, false),
+    new THREE.CylinderGeometry(VR, VR, VT, 192, 1, false),
     [edgeMatV, topMat, botMat]
   )
   vinylDisc.name = 'vinylDisc'
@@ -203,16 +203,9 @@ export async function buildAlbumScene(scene, images, meta) {
     holeMat
   )
 
-  // ── Bevel rings ───────────────────────────────────────────────────────────
-  const bevelGeo = new THREE.TorusGeometry(VR - 0.001, VT * 0.35, 8, 128)
-  const bTop = new THREE.Mesh(bevelGeo, edgeMatV)
-  bTop.rotation.x =  Math.PI / 2; bTop.position.y =  VT / 2
-  const bBot = new THREE.Mesh(bevelGeo, edgeMatV)
-  bBot.rotation.x =  Math.PI / 2; bBot.position.y = -VT / 2
-
   const recordGroup = new THREE.Group()
   recordGroup.name  = 'recordGroup'
-  recordGroup.add(vinylDisc, labelTop, labelBot, holeCap, bTop, bBot)
+  recordGroup.add(vinylDisc, labelTop, labelBot, holeCap)
 
   const sleeveBottom = -SZ / 2
   recordGroup.position.set(0, sleeveBottom - VR * 0.3, VR * 1.45)
